@@ -47,6 +47,7 @@ const Index: React.FC = () => {
           isRunning={isRunning} 
           onPlayPause={handlePlayPause} 
           onReset={handleReset} 
+          onSetTimer={handleSetTimer}
         />
       </main>
     </div>

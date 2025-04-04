@@ -1,18 +1,24 @@
 
-import React from 'react';
-import { Play, Pause, Settings, Plus, RotateCcw } from 'lucide-react';
+import React, { useState } from 'react';
+import { Play, Pause, Settings, RotateCcw, Clock } from 'lucide-react';
+import TimerSettings from './TimerSettings';
+import QuickTimer from './QuickTimer';
 
 interface TimerControlsProps {
   isRunning: boolean;
   onPlayPause: () => void;
   onReset: () => void;
+  onSetTimer: (hours: number, minutes: number, seconds: number) => void;
 }
 
 const TimerControls: React.FC<TimerControlsProps> = ({ 
   isRunning, 
   onPlayPause,
-  onReset
+  onReset,
+  onSetTimer
 }) => {
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
   return (
     <div className="flex flex-col items-center mt-24 gap-8">
       <button 
@@ -36,14 +42,22 @@ const TimerControls: React.FC<TimerControlsProps> = ({
           <RotateCcw className="w-8 h-8" />
         </button>
         
-        <button className="p-2 rounded-md bg-white/10 hover:bg-white/20 transition-all">
-          <Plus className="w-8 h-8" />
-        </button>
+        <QuickTimer onSetTimer={onSetTimer} />
         
-        <button className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-all">
+        <button 
+          onClick={() => setSettingsOpen(true)}
+          className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-all"
+          aria-label="Settings"
+        >
           <Settings className="w-8 h-8" />
         </button>
       </div>
+
+      <TimerSettings 
+        open={settingsOpen} 
+        onOpenChange={setSettingsOpen} 
+        onSetTimer={onSetTimer}
+      />
     </div>
   );
 };
