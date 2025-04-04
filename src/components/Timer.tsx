@@ -6,9 +6,10 @@ interface TimerProps {
   isRunning: boolean;
   onReset: number; // Used as a trigger for reset
   initialTime?: { hours: number, minutes: number, seconds: number };
+  onTimeUpdate?: (time: { hours: number, minutes: number, seconds: number }) => void;
 }
 
-const Timer: React.FC<TimerProps> = ({ isRunning, onReset, initialTime }) => {
+const Timer: React.FC<TimerProps> = ({ isRunning, onReset, initialTime, onTimeUpdate }) => {
   const [time, setTime] = useState({ hours: 0, minutes: 0, seconds: 0 });
   const [hasCompleted, setHasCompleted] = useState(false);
   
@@ -19,6 +20,13 @@ const Timer: React.FC<TimerProps> = ({ isRunning, onReset, initialTime }) => {
       setHasCompleted(false);
     }
   }, [initialTime]);
+  
+  // Report current time to parent component
+  useEffect(() => {
+    if (onTimeUpdate) {
+      onTimeUpdate(time);
+    }
+  }, [time, onTimeUpdate]);
   
   // Handle timer counting
   useEffect(() => {
