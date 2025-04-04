@@ -1,27 +1,33 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
+import { useEffect } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Index from './pages/Index';
+import { timerLogService } from './lib/timerLogService';
+import { toast, Toaster } from 'sonner';
 
-const queryClient = new QueryClient();
+function App() {
+  // Migrate local storage logs to Supabase on app startup
+  useEffect(() => {
+    const migrateLogsToSupabase = async () => {
+      try {
+        await timerLogService.migrateLocalLogs();
+      } catch (error) {
+        console.error('Error migrating logs to Supabase:', error);
+      }
+    };
+    
+    migrateLogsToSupabase();
+  }, []);
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
+  return (
+    <>
+      <Toaster position="top-center" />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+    </>
+  );
+}
 
 export default App;
