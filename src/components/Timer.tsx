@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 
 interface TimerProps {
   isRunning: boolean;
-  onReset: () => void;
+  onReset: number; // Changed from function to number
 }
 
 const Timer: React.FC<TimerProps> = ({ isRunning, onReset }) => {
