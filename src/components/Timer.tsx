@@ -1,28 +1,63 @@
 
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 
 interface TimerProps {
   isRunning: boolean;
-  onReset: number; // Changed from function to number
+  onReset: number; // Used as a trigger for reset
+  initialTime?: { hours: number, minutes: number, seconds: number };
 }
 
-const Timer: React.FC<TimerProps> = ({ isRunning, onReset }) => {
+const Timer: React.FC<TimerProps> = ({ isRunning, onReset, initialTime }) => {
   const [time, setTime] = useState({ hours: 0, minutes: 0, seconds: 0 });
+  const [hasCompleted, setHasCompleted] = useState(false);
   
+  // Handle initial time set
+  useEffect(() => {
+    if (initialTime) {
+      setTime(initialTime);
+      setHasCompleted(false);
+    }
+  }, [initialTime]);
+  
+  // Handle timer counting
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
     
     if (isRunning) {
       interval = setInterval(() => {
         setTime(prevTime => {
-          const newSeconds = prevTime.seconds + 1;
-          const newMinutes = prevTime.minutes + Math.floor(newSeconds / 60);
-          const newHours = prevTime.hours + Math.floor(newMinutes / 60);
+          // If timer reaches 0, don't go negative
+          if (prevTime.hours === 0 && prevTime.minutes === 0 && prevTime.seconds === 0) {
+            if (interval) clearInterval(interval);
+            
+            // Show completion notification only once
+            if (!hasCompleted) {
+              toast.success("Timer completed!");
+              setHasCompleted(true);
+            }
+            
+            return prevTime;
+          }
+          
+          let newSeconds = prevTime.seconds - 1;
+          let newMinutes = prevTime.minutes;
+          let newHours = prevTime.hours;
+          
+          if (newSeconds < 0) {
+            newSeconds = 59;
+            newMinutes -= 1;
+          }
+          
+          if (newMinutes < 0) {
+            newMinutes = 59;
+            newHours -= 1;
+          }
           
           return {
             hours: newHours,
-            minutes: newMinutes % 60,
-            seconds: newSeconds % 60
+            minutes: newMinutes,
+            seconds: newSeconds
           };
         });
       }, 1000);
@@ -31,11 +66,17 @@ const Timer: React.FC<TimerProps> = ({ isRunning, onReset }) => {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isRunning]);
+  }, [isRunning, hasCompleted]);
   
+  // Handle reset
   useEffect(() => {
-    setTime({ hours: 0, minutes: 0, seconds: 0 });
-  }, [onReset]);
+    if (initialTime) {
+      setTime(initialTime);
+    } else {
+      setTime({ hours: 0, minutes: 0, seconds: 0 });
+    }
+    setHasCompleted(false);
+  }, [onReset, initialTime]);
   
   const formatTimeDigit = (digit: number): string => {
     return digit.toString().padStart(2, '0');

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Play, Settings, Plus, RotateCcw } from 'lucide-react';
+import { Play, Pause, Settings, Plus, RotateCcw } from 'lucide-react';
 
 interface TimerControlsProps {
   isRunning: boolean;
@@ -20,7 +20,11 @@ const TimerControls: React.FC<TimerControlsProps> = ({
         className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-all duration-300"
         aria-label={isRunning ? "Pause" : "Play"}
       >
-        <Play className={`w-10 h-10 ${isRunning ? 'text-white/80' : 'text-white'}`} />
+        {isRunning ? (
+          <Pause className="w-10 h-10 text-white" />
+        ) : (
+          <Play className="w-10 h-10 text-white" />
+        )}
       </button>
       
       <div className="flex justify-between w-full max-w-md px-10">
