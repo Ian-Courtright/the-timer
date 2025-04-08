@@ -1,4 +1,4 @@
-# Welcome to your Lovable project
+# THE Timer: A Minimalist Designer Timer App
 
 ## Project info
 
@@ -71,3 +71,9 @@ Yes it is!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+
+## Features
+
+- **Minimalist Design:** A clean, modern interface focused on usability.
+- **"THE" Timer Experience:** Unique timer interaction and visual feedback.
+- **Customizable Timers:** Set timers for specific hours, minutes, and seconds.

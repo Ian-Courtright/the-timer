@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X } from 'lucide-react';
 import gsap from 'gsap';
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface CustomTimerInputProps {
   isOpen: boolean;
@@ -39,6 +40,42 @@ const CustomTimerInput: React.FC<CustomTimerInputProps> = ({
     }
   }, [isOpen]);
   
+  // Handle click outside to close
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node) && isOpen) {
+        onClose();
+      }
+    };
+    
+    // Add event listener when modal is open
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    // Clean up
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, onClose]);
+  
+  // Handle ESC key to close
+  useEffect(() => {
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscKey);
+    }
+    
+    return () => {
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [isOpen, onClose]);
+  
   const handleApply = () => {
     onSetTimer(hours, minutes, seconds);
     onClose();
@@ -49,21 +86,35 @@ const CustomTimerInput: React.FC<CustomTimerInputProps> = ({
     setSeconds(0);
   };
   
+  // Handle Enter key press to submit
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleApply();
+    }
+  };
+  
   if (!isOpen) return null;
   
   return (
     <div 
       ref={containerRef} 
-      className="absolute bottom-36 left-1/2 -translate-x-1/2 bg-[#1E1E1E] rounded-lg shadow-lg p-4 w-72 border border-[#333333]"
+      className="absolute bottom-36 left-1/2 -translate-x-1/2 bg-[#1E1E1E] rounded-lg shadow-lg p-4 w-72 border border-[#333333] z-10"
     >
       <div className="flex justify-between items-center mb-3">
         <h3 className="text-lg font-black tracking-tight text-white">Custom Timer</h3>
-        <button 
-          onClick={onClose}
-          className="rounded-full p-1 hover:bg-white/10 transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button 
+              onClick={onClose}
+              className="rounded-full p-1 hover:bg-white/10 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent className="bg-[#2A2A2A] text-white border-[#333333]">
+            <p>Press Esc to close</p>
+          </TooltipContent>
+        </Tooltip>
       </div>
       
       <div className="grid grid-cols-3 gap-2 mb-4">
@@ -77,6 +128,7 @@ const CustomTimerInput: React.FC<CustomTimerInputProps> = ({
             value={hours}
             onChange={(e) => setHours(Math.max(0, Math.min(23, Number(e.target.value))))}
             className="w-full bg-white/10 border border-white/20 rounded-md px-2 py-1 text-white focus:outline-none focus:ring-1 focus:ring-white/30"
+            onKeyDown={handleKeyDown}
           />
         </div>
         
@@ -90,6 +142,7 @@ const CustomTimerInput: React.FC<CustomTimerInputProps> = ({
             value={minutes}
             onChange={(e) => setMinutes(Math.max(0, Math.min(59, Number(e.target.value))))}
             className="w-full bg-white/10 border border-white/20 rounded-md px-2 py-1 text-white focus:outline-none focus:ring-1 focus:ring-white/30"
+            onKeyDown={handleKeyDown}
           />
         </div>
         
@@ -103,16 +156,24 @@ const CustomTimerInput: React.FC<CustomTimerInputProps> = ({
             value={seconds}
             onChange={(e) => setSeconds(Math.max(0, Math.min(59, Number(e.target.value))))}
             className="w-full bg-white/10 border border-white/20 rounded-md px-2 py-1 text-white focus:outline-none focus:ring-1 focus:ring-white/30"
+            onKeyDown={handleKeyDown}
           />
         </div>
       </div>
       
-      <button 
-        onClick={handleApply}
-        className="w-full py-2 bg-white/20 hover:bg-white/30 rounded-md transition-colors font-bold"
-      >
-        Start Timer
-      </button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button 
+            onClick={handleApply}
+            className="w-full py-2 bg-white/20 hover:bg-white/30 rounded-md transition-colors font-bold"
+          >
+            Add Timer
+          </button>
+        </TooltipTrigger>
+        <TooltipContent className="bg-[#2A2A2A] text-white border-[#333333]">
+          <p>Press Enter to add timer</p>
+        </TooltipContent>
+      </Tooltip>
     </div>
   );
 };

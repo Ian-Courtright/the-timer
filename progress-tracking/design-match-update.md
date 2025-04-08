@@ -28,9 +28,6 @@
 - [x] Update TimerFlow logo with matching button style
 - [x] Reposition TimerFlow as a tab in the top-right corner
 - [x] Add a humorous tooltip to TimerFlow explaining the app's purpose
-- [x] Add ability to name timers
-- [x] Add timer logs in settings
-- [x] Show negative time with pulsing red effect when timer goes past zero
 
 ## Technical Implementation
 - Modified the conic gradient calculation to flip the pie chart direction
@@ -49,9 +46,6 @@
 - Updated TimerFlow logo with dark background and rounded corners to match the QuickSets style
 - Repositioned TimerFlow as a tab in the top-right corner to balance the header design
 - Added a humorous tooltip that explains the app's purpose and features with a satirical tone
-- Created a subtle timer name input field above the timer display
-- Built a comprehensive timer logs system with detailed time tracking
-- Implemented negative time display with red pulsing effect for overtime
 
 ## Component Changes
 
@@ -90,10 +84,6 @@
 - Improved spacing between time elements for better readability
 - Simplified the layout logic for easier maintenance
 - Removed text shadow for cleaner appearance matching the design reference
-- Added a subtle timer name input field above the timer display
-- Implemented red coloring and pulsing effect for overtime
-- Added a minus sign display for negative time
-- Added "OVERTIME" status indicator
 
 ### TimerControls
 - Moved plus button to be in line with reset and settings buttons
@@ -101,21 +91,11 @@
 - Organized buttons in a more balanced layout
 - Added animation effects for the plus button
 
-### TimerSettings
+### CustomTimerInput (New)
 - Created a new component for custom timer input
 - Implemented a clean, modal-like design with hours, minutes, seconds inputs
 - Added animations for appearing/disappearing
 - Includes a direct "Start Timer" button for quick access
-- Added a Timer Logs tab with detailed timer history
-- Implemented a clear, organized display of timer data
-- Added status indicators for timer completion and overtime
-- Included a "Clear All Logs" functionality
-
-### Utils (New)
-- Added timer log data structures and interfaces
-- Implemented localStorage-based log persistence
-- Created utility functions for time calculations and formatting
-- Built a complete TimerLogService for managing timer history
 
 ## UI Improvements
 - More faithful representation of the design screenshots
@@ -130,9 +110,6 @@
 - Consistent styling between UI elements (QuickSets and TimerFlow)
 - Balanced header design with elements on both sides
 - Added humor and personality through the tooltip content
-- Enhanced timer accountability with naming and logs
-- Clear visual indication of overtime with red color and pulsing effect
-- Comprehensive timer history for better time tracking
 
 ## Next Steps
 - Test the new UI on different screen sizes and devices
@@ -176,9 +153,6 @@
 - Updated TimerFlow logo with matching button style to be consistent with QuickSets
 - Repositioned TimerFlow as a tab in the top-right corner
 - Added humorous tooltip to provide app explanation with personality
-- Added the ability to name timers with a subtle input field
-- Implemented a comprehensive timer logs system in the settings menu
-- Added red pulsing effect and minus sign for negative time when going past 00:00:00
 
 ## Technical Modifications
 - Removed `bg-timer-background/80` from the header component
@@ -195,11 +169,6 @@
 - Changed TimerFlow position to the top-right corner with rounded bottom-left corner
 - Integrated the Tooltip component from the UI library
 - Added multi-paragraph tooltip content with satirical descriptions
-- Created a timer name input that blends with the background
-- Implemented timer logs storage using localStorage
-- Added a detailed logs view in the settings panel
-- Created a red pulsing background effect for the timer when in overtime
-- Added the minus sign indicator for negative time
 
 ## Benefits
 - Cleaner, more minimal visual design that better matches the reference design
@@ -216,16 +185,10 @@
 - Balanced header layout with elements on both sides
 - Added personality and humor through tooltip content
 - Improved information discoverability through tooltips
-- Enhanced timer organization with naming capability
-- Better accountability with comprehensive timer logs
-- Clear visual indication when going overtime
-- Detailed tracking of timer completion and overtime statistics
 
 ## Next Steps
 - Consider further refinements to borders and other subtle elements
 - Test the transparent components against different background situations
 - Ensure consistent visual appearance across all viewport sizes
 - Consider adding more preset time options based on user feedback
-- Explore additional ways to enhance the time addition functionality
-- Consider adding export functionality for timer logs
-- Implement filtering and sorting options for the logs view 
+- Explore additional ways to enhance the time addition functionality 
