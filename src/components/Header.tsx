@@ -207,9 +207,9 @@ const Header: React.FC<HeaderProps> = ({
       {/* Center QuickSets content */}
       <div 
         ref={quickSetsContentRef}
-        className={`absolute top-12 left-1/2 transform -translate-x-1/2 z-20 ${quickSetsVisible ? 'block' : 'hidden'}`}
+        className={`absolute top-12 left-1/2 transform -translate-x-1/2 z-20 w-full max-w-xs mx-auto ${quickSetsVisible ? 'block' : 'hidden'}`}
       >
-        <div className="px-2 py-2">
+        <div className="px-2 py-2 flex justify-center">
           <QuickSets onSetTimer={onSetTimer} />
         </div>
       </div>

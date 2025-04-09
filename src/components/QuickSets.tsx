@@ -33,44 +33,67 @@ const QuickSets: React.FC<QuickSetsProps> = ({ onSetTimer }) => {
   return (
     <div 
       ref={containerRef}
-      className="bg-[#1E1E1E] rounded-md shadow-md py-1 border border-[#2A2A2A] overflow-hidden"
+      className="bg-[#1E1E1E] rounded-md shadow-md py-3 border border-[#2A2A2A] overflow-hidden w-[280px] sm:w-[320px]"
     >
-      <div className="flex flex-wrap justify-center gap-2 px-2">
+      <div className="grid grid-cols-3 gap-3 px-3 mx-auto">
+        {/* Column 1 */}
         <button 
-          className="px-3 py-1 bg-white/10 hover:bg-white/15 rounded-md text-sm transition-colors"
+          className="px-3 py-2 bg-white/10 hover:bg-white/15 rounded-md text-sm transition-colors w-full"
           onClick={() => handleSetTimer(0, 2, 0)}
         >
           2 min
         </button>
         <button 
-          className="px-3 py-1 bg-white/10 hover:bg-white/15 rounded-md text-sm transition-colors"
+          className="px-3 py-2 bg-white/10 hover:bg-white/15 rounded-md text-sm transition-colors w-full"
           onClick={() => handleSetTimer(0, 5, 0)}
         >
           5 min
         </button>
         <button 
-          className="px-3 py-1 bg-white/10 hover:bg-white/15 rounded-md text-sm transition-colors"
+          className="px-3 py-2 bg-white/10 hover:bg-white/15 rounded-md text-sm transition-colors w-full"
           onClick={() => handleSetTimer(0, 10, 0)}
         >
           10 min
         </button>
+        
+        {/* Column 2 */}
         <button 
-          className="px-3 py-1 bg-white/10 hover:bg-white/15 rounded-md text-sm transition-colors"
+          className="px-3 py-2 bg-white/10 hover:bg-white/15 rounded-md text-sm transition-colors w-full"
           onClick={() => handleSetTimer(0, 15, 0)}
         >
           15 min
         </button>
         <button 
-          className="px-3 py-1 bg-white/10 hover:bg-white/15 rounded-md text-sm transition-colors"
+          className="px-3 py-2 bg-white/10 hover:bg-white/15 rounded-md text-sm transition-colors w-full"
+          onClick={() => handleSetTimer(0, 20, 0)}
+        >
+          20 min
+        </button>
+        <button 
+          className="px-3 py-2 bg-white/10 hover:bg-white/15 rounded-md text-sm transition-colors w-full"
           onClick={() => handleSetTimer(0, 25, 0)}
         >
           25 min
         </button>
+        
+        {/* Column 3 */}
         <button 
-          className="px-3 py-1 bg-white/10 hover:bg-white/15 rounded-md text-sm transition-colors"
+          className="px-3 py-2 bg-white/10 hover:bg-white/15 rounded-md text-sm transition-colors w-full"
+          onClick={() => handleSetTimer(0, 30, 0)}
+        >
+          30 min
+        </button>
+        <button 
+          className="px-3 py-2 bg-white/10 hover:bg-white/15 rounded-md text-sm transition-colors w-full"
           onClick={() => handleSetTimer(1, 0, 0)}
         >
           1 hour
+        </button>
+        <button 
+          className="px-3 py-2 bg-white/10 hover:bg-white/15 rounded-md text-sm transition-colors w-full"
+          onClick={() => handleSetTimer(2, 0, 0)}
+        >
+          2 hour
         </button>
       </div>
     </div>
