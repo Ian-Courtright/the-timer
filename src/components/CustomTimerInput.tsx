@@ -98,7 +98,7 @@ const CustomTimerInput: React.FC<CustomTimerInputProps> = ({
   return (
     <div 
       ref={containerRef} 
-      className="absolute bottom-36 left-1/2 -translate-x-1/2 bg-[#1E1E1E] rounded-lg shadow-lg p-4 w-72 border border-[#333333] z-10"
+      className="absolute bottom-28 left-1/2 -translate-x-1/2 bg-[#1E1E1E] rounded-lg shadow-lg p-4 w-72 border border-[#333333] z-10"
     >
       <div className="flex justify-between items-center mb-3">
         <h3 className="text-lg font-black tracking-tight text-white">Custom Timer</h3>
@@ -167,7 +167,7 @@ const CustomTimerInput: React.FC<CustomTimerInputProps> = ({
             onClick={handleApply}
             className="w-full py-2 bg-white/20 hover:bg-white/30 rounded-md transition-colors font-bold"
           >
-            Add Timer
+            Set Timer
           </button>
         </TooltipTrigger>
         <TooltipContent className="bg-[#2A2A2A] text-white border-[#333333]">

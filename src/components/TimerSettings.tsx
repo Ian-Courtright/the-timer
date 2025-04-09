@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   X, Clock, Trash2, PlayCircle, PauseCircle, RefreshCw, CheckCircle, 
   PlusCircle, AlertCircle, BarChart3, ChevronDown, ChevronUp, Timer,
-  Volume2, VolumeX, Volume1, Bell, ChevronLeft
+  Volume2, VolumeX, Volume1, Bell, ChevronLeft, Settings
 } from 'lucide-react';
 import { TimerLog, TimerEvent } from '@/lib/types';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -31,6 +31,9 @@ interface TimerSettingsProps {
   // Notification settings props
   notificationsEnabled?: boolean;
   onNotificationsEnabledChange?: (enabled: boolean) => void;
+  // Tab control
+  activeTab?: string;
+  setActiveTab?: React.Dispatch<React.SetStateAction<string>>;
 }
 
 const TimerSettings: React.FC<TimerSettingsProps> = ({ 
@@ -53,12 +56,14 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({
   onCountdownSoundVolumeChange = () => {},
   // Notification settings with defaults
   notificationsEnabled = false,
-  onNotificationsEnabledChange = () => {}
+  onNotificationsEnabledChange = () => {},
+  // Tab control
+  activeTab = "custom",
+  setActiveTab = () => {}
 }) => {
   const [hours, setHours] = useState<number>(0);
   const [minutes, setMinutes] = useState<number>(0);
   const [seconds, setSeconds] = useState<number>(0);
-  const [activeTab, setActiveTab] = useState<string>("custom");
   const [expandedLogs, setExpandedLogs] = useState<Record<string, boolean>>({});
   const [selectedLogId, setSelectedLogId] = useState<string | null>(null);
   
@@ -263,515 +268,523 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="bg-timer-background text-timer-text border-timer-background max-w-md w-full overflow-y-auto">
-        <SheetHeader className="border-b border-white/10 pb-4">
-          <div className="flex justify-between items-center">
-            <SheetTitle className="text-white text-xl">{title}</SheetTitle>
-            <button 
-              onClick={() => onOpenChange(false)}
-              className="rounded-full p-1 hover:bg-white/10"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </SheetHeader>
-
-        <Tabs 
-          defaultValue="custom" 
-          value={activeTab} 
-          onValueChange={setActiveTab} 
-          className="mt-6"
-        >
-          <TabsList className="grid grid-cols-2 bg-black/30 rounded-xl p-1 mb-6">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <TabsTrigger 
-                  value="custom" 
-                  onClick={() => setActiveTab("custom")}
-                  className="rounded-lg data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:shadow"
-                >
-                  Custom Timer
-                </TabsTrigger>
-              </TooltipTrigger>
-              <TooltipContent className="bg-[#2A2A2A] text-white border-[#333333]">
-                <p>Set custom timer values</p>
-              </TooltipContent>
-            </Tooltip>
-            
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <TabsTrigger 
-                  value="logs" 
-                  onClick={() => setActiveTab("logs")}
-                  className="rounded-lg data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:shadow"
-                >
-                  Timer Analytics
-                </TabsTrigger>
-              </TooltipTrigger>
-              <TooltipContent className="bg-[#2A2A2A] text-white border-[#333333]">
-                <p>Press 'A' to view your long history of procrastination</p>
-              </TooltipContent>
-            </Tooltip>
-          </TabsList>
-          
-          <TabsContent value="custom" className="space-y-6">
-            <div className="space-y-4 bg-black/20 p-5 rounded-xl border border-white/5">
-              <h3 className="text-lg font-medium">Set Custom Timer</h3>
-              
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <label htmlFor="hours" className="text-sm text-white/70">Hours</label>
-                  <input 
-                    id="hours"
-                    type="number" 
-                    min="0"
-                    max="23"
-                    value={hours}
-                    onChange={(e) => setHours(Number(e.target.value))}
-                    className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-white/30"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label htmlFor="minutes" className="text-sm text-white/70">Minutes</label>
-                  <input 
-                    id="minutes"
-                    type="number" 
-                    min="0"
-                    max="59"
-                    value={minutes}
-                    onChange={(e) => setMinutes(Number(e.target.value))}
-                    className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-white/30"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label htmlFor="seconds" className="text-sm text-white/70">Seconds</label>
-                  <input 
-                    id="seconds"
-                    type="number" 
-                    min="0"
-                    max="59"
-                    value={seconds}
-                    onChange={(e) => setSeconds(Number(e.target.value))}
-                    className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-white/30"
-                  />
-                </div>
-              </div>
-
+      <SheetContent className="bg-[#1A1A1A] text-white border-none max-w-md w-full overflow-y-auto p-0" hideCloseButton>
+        <div className="bg-[#1A1A1A] px-6 py-4 border-b border-white/5">
+          <SheetHeader className="mb-0">
+            <div className="flex justify-between items-center">
+              <SheetTitle className="text-white text-lg flex items-center gap-2">
+                <Settings className="w-5 h-5 text-white/70" />
+                {title}
+              </SheetTitle>
               <button 
-                onClick={handleApplySettings}
-                className="w-full mt-4 py-3 bg-white/20 hover:bg-white/30 rounded-md transition-colors font-medium"
+                onClick={() => onOpenChange(false)}
+                className="text-white/60 hover:text-white p-1.5 hover:bg-white/5 rounded-full transition-colors"
+                aria-label="Close settings"
               >
-                Apply Settings
+                <X className="w-5 h-5" />
               </button>
             </div>
+          </SheetHeader>
+        </div>
 
-            <div className="space-y-5 pt-4 bg-black/20 p-5 rounded-xl border border-white/5">
-              <h3 className="text-lg font-medium">Timer Appearance</h3>
+        <div className="px-5 py-5 space-y-5">
+          <Tabs 
+            defaultValue="custom" 
+            value={activeTab} 
+            onValueChange={setActiveTab} 
+            className="w-full"
+          >
+            <TabsList className="grid grid-cols-2 bg-black/20 rounded-full p-0.5 mb-5 w-full">
+              <TabsTrigger 
+                value="custom" 
+                onClick={() => setActiveTab("custom")}
+                className="rounded-full py-1.5 text-white/60 data-[state=active]:bg-white/10 data-[state=active]:text-white transition-all"
+              >
+                <Clock className="w-4 h-4 mr-2" />
+                Settings
+              </TabsTrigger>
               
-              <div className="space-y-6">
-                {/* System sound settings */}
-                <div className="space-y-5">
-                  <div className="flex justify-between items-center">
-                    <label className="inline-flex items-center space-x-2">
-                      <input 
-                        type="checkbox" 
-                        className="rounded bg-white/10 border-white/20 w-4 h-4"
-                        checked={soundEnabled}
-                        onChange={(e) => onSoundEnabledChange(e.target.checked)}
-                      />
-                      <span>System sounds</span>
-                    </label>
-                    {getVolumeIcon()}
-                  </div>
-                  
-                  {soundEnabled && (
-                    <div className="pl-6 space-y-1">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-sm text-white/70">Volume</span>
-                        <span className="text-sm text-white/70">{formatVolumePercent(soundVolume)}</span>
-                      </div>
-                      <Slider
-                        defaultValue={[soundVolume * 100]}
-                        max={100}
-                        step={5}
-                        onValueChange={(values) => onSoundVolumeChange(values[0] / 100)}
-                        className="w-full"
-                      />
-                    </div>
-                  )}
-                </div>
-                
-                {/* Countdown sound settings */}
-                <div className="space-y-5 border-t border-white/10 pt-5">
-                  <div className="flex justify-between items-center">
-                    <label className="inline-flex items-center space-x-2">
-                      <input 
-                        type="checkbox" 
-                        className="rounded bg-white/10 border-white/20 w-4 h-4"
-                        checked={countdownSoundEnabled}
-                        onChange={(e) => onCountdownSoundEnabledChange(e.target.checked)}
-                      />
-                      <span>Countdown sounds</span>
-                    </label>
-                    {getCountdownVolumeIcon()}
-                  </div>
-                  
-                  {countdownSoundEnabled && (
-                    <div className="pl-6 space-y-1">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-sm text-white/70">Volume</span>
-                        <span className="text-sm text-white/70">{formatVolumePercent(countdownSoundVolume)}</span>
-                      </div>
-                      <Slider
-                        defaultValue={[countdownSoundVolume * 100]}
-                        max={100}
-                        step={5}
-                        onValueChange={(values) => onCountdownSoundVolumeChange(values[0] / 100)}
-                        className="w-full"
-                      />
-                    </div>
-                  )}
-                </div>
-                
-                {/* Notification settings */}
-                <div className="border-t border-white/10 pt-5">
-                  <label className="inline-flex items-center space-x-2">
-                    <input 
-                      type="checkbox" 
-                      className="rounded bg-white/10 border-white/20 w-4 h-4"
-                      checked={notificationsEnabled}
-                      onChange={(e) => onNotificationsEnabledChange(e.target.checked)}
-                    />
-                    <span className="flex items-center gap-2">
-                      <Bell className="w-4 h-4 opacity-70" />
-                      <span>Show notifications</span>
-                    </span>
-                  </label>
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="logs" className="space-y-6">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="text-lg font-medium flex items-center gap-2">
-                <BarChart3 className="w-5 h-5" />
+              <TabsTrigger 
+                value="logs" 
+                onClick={() => setActiveTab("logs")}
+                className="rounded-full py-1.5 text-white/60 data-[state=active]:bg-white/10 data-[state=active]:text-white transition-all"
+              >
+                <BarChart3 className="w-4 h-4 mr-2" />
                 Timer Analytics
-              </h3>
-              {validTimerLogs.length > 0 && (
-                <button 
-                  onClick={onClearLogs}
-                  className="p-2 text-white/70 hover:text-white/90 hover:bg-white/10 rounded-md"
-                  title="Clear all logs"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
-              )}
-            </div>
-
-            {/* Overall Analytics Summary */}
-            {validTimerLogs.length > 0 && !selectedLog && (
-              <div className="bg-white/5 rounded-lg p-4 border border-white/10 mb-4">
-                <h4 className="text-sm font-medium mb-3 text-white/80 flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4" />
-                  Overall Timer Statistics
-                </h4>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-                  <div>
-                    <p className="text-white/60">Total Timers</p>
-                    <p className="font-medium">{logStats.totalTimers}</p>
-                  </div>
-                  <div>
-                    <p className="text-white/60">Completed</p>
-                    <p className="font-medium text-green-400">{logStats.completedTimers}</p>
-                  </div>
-                  <div>
-                    <p className="text-white/60">Canceled</p>
-                    <p className="font-medium text-yellow-400">{logStats.canceledTimers}</p>
-                  </div>
-                  <div>
-                    <p className="text-white/60">Over Time</p>
-                    <p className="font-medium text-red-400">{logStats.overageTimers}</p>
-                  </div>
-                  <div className="col-span-2 pt-1 border-t border-white/10">
-                    <p className="text-white/60">Total Planned Time</p>
-                    <p className="font-medium">{formatHumanTime(logStats.totalPlannedTime)}</p>
-                  </div>
-                  <div>
-                    <p className="text-white/60">Total Actual Time</p>
-                    <p className="font-medium">{formatHumanTime(logStats.totalActualTime)}</p>
-                  </div>
-                  <div>
-                    <p className="text-white/60">Total Paused Time</p>
-                    <p className="font-medium text-blue-400">{formatHumanTime(logStats.totalPauseTime)}</p>
-                  </div>
-                  {logStats.totalOverageTime > 0 && (
-                    <div className="col-span-2">
-                      <p className="text-white/60">Total Overage Time</p>
-                      <p className="font-medium text-red-400">{formatHumanTime(logStats.totalOverageTime)}</p>
-                    </div>
-                  )}
-                  {logStats.averageEfficiency > 0 && (
-                    <div className="col-span-2">
-                      <p className="text-white/60">Average Efficiency</p>
-                      <p className="font-medium text-blue-400">{logStats.averageEfficiency.toFixed(1)}%</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Back button for detailed view */}
-            {selectedLog && (
-              <button 
-                onClick={() => setSelectedLogId(null)}
-                className="flex items-center text-sm text-white/70 hover:text-white transition-colors mb-2"
-              >
-                <ChevronLeft className="w-4 h-4 mr-1" />
-                Back to Timer List
-              </button>
-            )}
+              </TabsTrigger>
+            </TabsList>
             
-            {validTimerLogs.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-white/50">
-                <Clock className="w-12 h-12 mb-4 opacity-50" />
-                <p className="text-center">No timer logs yet.</p>
-                <p className="text-center text-sm mt-1">Start a timer to track your time.</p>
-              </div>
-            ) : selectedLog ? (
-              // Detailed log view
-              <div 
-                className={`p-4 rounded-lg ${
-                  selectedLog.canceled ? 'bg-yellow-500/10 border border-yellow-500/20' : 
-                  selectedLog.overageTime > 0 ? 'bg-red-500/10 border border-red-500/20' : 
-                  'bg-white/10 border border-white/20'
-                }`}
-              >
-                <div className="flex justify-between items-center mb-3">
-                  <h3 className="text-lg font-medium">{selectedLog.timerName}</h3>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-sm px-2 py-0.5 rounded-full ${
-                      selectedLog.canceled ? 'bg-yellow-500/20 text-yellow-300' :
-                      selectedLog.overageTime > 0 ? 'bg-red-500/20 text-red-300' :
-                      'bg-green-500/20 text-green-300'
-                    }`}>
-                      {selectedLog.canceled ? 'Canceled' : selectedLog.overageTime > 0 ? 'Over Time' : 'Completed'}
-                    </span>
-                    {onDeleteLog && (
-                      <button 
-                        onClick={() => {
-                          onDeleteLog(selectedLog.id);
-                          setSelectedLogId(null); // Return to list view after deleting
-                        }}
-                        className="text-white/50 hover:text-white/80 p-1 hover:bg-white/10 rounded-full transition-colors"
-                        title="Delete this timer log"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Date and time information */}
-                <div className="text-xs text-white/60 mb-4">
-                  <div className="flex justify-between">
-                    <span>Started: {formatDate(selectedLog.startTime)}</span>
-                    <span>Ended: {formatDate(selectedLog.endTime)}</span>
-                  </div>
-                  <div className="mt-1">
-                    Total Duration: {getTimeElapsed(selectedLog.startTime, selectedLog.endTime)}
-                  </div>
-                </div>
-
-                {/* Core timer metrics */}
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  <div className="bg-white/5 p-3 rounded-md">
-                    <p className="text-white/70 text-xs">Set Time</p>
-                    <p className="text-lg font-mono font-medium">{formatTime(selectedLog.initialDuration)}</p>
-                  </div>
-                  <div className="bg-white/5 p-3 rounded-md">
-                    <p className="text-white/70 text-xs">Actual Time</p>
-                    <p className="text-lg font-mono font-medium">{formatTime(selectedLog.actualDuration)}</p>
-                  </div>
-                </div>
-
-                {/* Analytics section */}
-                {selectedLog.analysis && (
-                  <div className="bg-white/5 p-3 rounded-md mb-4">
-                    <h4 className="flex items-center gap-1 mb-2 text-white/80 font-medium">
-                      <BarChart3 className="w-4 h-4" />
-                      Analytics
-                    </h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <p className="text-blue-400 text-xs">Active Time</p>
-                        <p className="font-mono">{formatTime(selectedLog.analysis.totalActiveTime)}</p>
-                      </div>
-                      {selectedLog.analysis.efficiency !== undefined && (
-                        <div>
-                          <p className="text-blue-400 text-xs">Efficiency</p>
-                          <p className="font-mono">{selectedLog.analysis.efficiency.toFixed(1)}%</p>
-                        </div>
-                      )}
-                      {selectedLog.analysis.averagePauseDuration !== undefined && (
-                        <div>
-                          <p className="text-blue-400 text-xs">Avg Pause</p>
-                          <p className="font-mono">{formatTime(selectedLog.analysis.averagePauseDuration)}</p>
-                        </div>
-                      )}
-                      {selectedLog.analysis.overagePercentage !== undefined && (
-                        <div>
-                          <p className="text-red-400 text-xs">Overage %</p>
-                          <p className="font-mono">{selectedLog.analysis.overagePercentage.toFixed(1)}%</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
+            <TabsContent value="custom" className="space-y-5">
+              <div className="bg-black/20 p-5 rounded-lg space-y-5">
+                <h3 className="text-base font-normal flex items-center gap-2 text-white/90">
+                  <Timer className="w-4 h-4 text-white/50" />
+                  <span>Custom Timer</span>
+                </h3>
                 
-                {selectedLog.pauseCount > 0 && (
-                  <div className="flex items-center bg-blue-500/10 p-2 rounded-md border border-blue-500/20 mb-4">
-                    <PauseCircle className="w-4 h-4 text-blue-400 mr-2" />
-                    <p className="text-sm">
-                      Paused {selectedLog.pauseCount} {selectedLog.pauseCount === 1 ? 'time' : 'times'} 
-                      {selectedLog.totalPauseDuration > 0 && ` (${formatTime(selectedLog.totalPauseDuration)})`}
-                    </p>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <label htmlFor="hours" className="text-white/50 text-sm">Hours</label>
+                    <input 
+                      id="hours"
+                      type="number" 
+                      min="0"
+                      max="23"
+                      value={hours}
+                      onChange={(e) => setHours(Number(e.target.value))}
+                      className="w-full bg-black/30 border border-white/5 rounded-md px-3 py-2 text-white focus:outline-none focus:border-white/20 transition-colors"
+                    />
                   </div>
-                )}
-                
-                {selectedLog.overageTime > 0 && (
-                  <div className="flex items-center bg-red-500/10 p-2 rounded-md border border-red-500/20 mb-4">
-                    <AlertCircle className="w-4 h-4 text-red-400 mr-2" />
-                    <p className="text-sm text-red-400">
-                      Went over by {formatTime(selectedLog.overageTime)}
-                    </p>
-                  </div>
-                )}
-
-                {/* Timeline view */}
-                <div className="mt-4">
-                  <h4 className="flex items-center gap-2 mb-3 text-white/80 font-medium">
-                    <Clock className="w-4 h-4" />
-                    Timeline of Events
-                  </h4>
                   
-                  {/* Visual timeline */}
-                  <div className="relative pl-6 border-l border-white/20 space-y-4">
-                    {selectedLog.events.map((event, index) => (
-                      <div key={index} className="relative">
-                        {/* Timeline dot */}
-                        <div className="absolute left-0 top-0 w-5 h-5 -ml-[13px] flex items-center justify-center rounded-full bg-timer-background border border-white/20">
-                          {getEventIcon(event.type)}
-                        </div>
-                        
-                        {/* Event card */}
-                        <div className={`rounded-md p-3 ml-2 border ${getEventColor(event.type)}`}>
-                          <div className="flex justify-between items-start">
-                            <p className="font-medium">{formatEventType(event.type)}</p>
-                            <p className="text-xs text-white/60">{formatShortTime(event.timestamp)}</p>
-                          </div>
-                          
-                          {/* Event details */}
-                          <div className="mt-1 text-sm">
-                            {event.timeData && (
-                              <p className="text-white/70 text-xs">
-                                Time: {event.timeData.hours}h {event.timeData.minutes}m {event.timeData.seconds}s
-                              </p>
-                            )}
-                            
-                            {event.duration && (
-                              <p className="text-blue-400 text-xs">
-                                Added: {Math.floor(event.duration / 3600)}h {Math.floor((event.duration % 3600) / 60)}m {event.duration % 60}s
-                              </p>
-                            )}
-                            
-                            {event.notes && (
-                              <p className="text-white/80 text-xs mt-1">{event.notes}</p>
-                            )}
-                            
-                            {index > 0 && (
-                              <p className="text-white/40 text-xs mt-1">
-                                {getTimeElapsed(selectedLog.events[index-1].timestamp, event.timestamp)} after previous
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="space-y-2">
+                    <label htmlFor="minutes" className="text-white/50 text-sm">Minutes</label>
+                    <input 
+                      id="minutes"
+                      type="number" 
+                      min="0"
+                      max="59"
+                      value={minutes}
+                      onChange={(e) => setMinutes(Number(e.target.value))}
+                      className="w-full bg-black/30 border border-white/5 rounded-md px-3 py-2 text-white focus:outline-none focus:border-white/20 transition-colors"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label htmlFor="seconds" className="text-white/50 text-sm">Seconds</label>
+                    <input 
+                      id="seconds"
+                      type="number" 
+                      min="0"
+                      max="59"
+                      value={seconds}
+                      onChange={(e) => setSeconds(Number(e.target.value))}
+                      className="w-full bg-black/30 border border-white/5 rounded-md px-3 py-2 text-white focus:outline-none focus:border-white/20 transition-colors"
+                    />
                   </div>
                 </div>
+
+                <button 
+                  onClick={handleApplySettings}
+                  className="w-full mt-2 py-2 bg-black/30 hover:bg-black/40 border border-white/5 rounded-md transition-colors font-normal flex items-center justify-center gap-2 text-white/80"
+                >
+                  <Clock className="w-4 h-4" />
+                  Set Timer
+                </button>
               </div>
-            ) : (
-              // Timer logs list view
-              <div className="space-y-3">
-                {validTimerLogs.slice().reverse().map((log) => (
-                  <div 
-                    key={log.id} 
-                    className={`p-3 rounded-lg transition-colors hover:bg-white/5 border ${
-                      log.canceled ? 'border-yellow-500/30' :
-                      log.overageTime > 0 ? 'border-red-500/30' :
-                      'border-green-500/30'
-                    }`}
-                  >
+
+              <div className="bg-black/20 p-5 rounded-lg space-y-5">
+                <h3 className="text-base font-normal flex items-center gap-2 text-white/90">
+                  <Volume2 className="w-4 h-4 text-white/50" />
+                  <span>Audio Settings</span>
+                </h3>
+                
+                <div className="space-y-4">
+                  <div className="bg-black/30 rounded-md p-3 space-y-4">
                     <div className="flex justify-between items-center">
-                      <h4 className="font-medium flex items-center cursor-pointer" onClick={() => handleSelectLog(log.id)}>
-                        <Timer className="w-4 h-4 mr-2 opacity-60" />
-                        {log.timerName}
-                      </h4>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${
-                          log.canceled ? 'bg-yellow-500/20 text-yellow-300' :
-                          log.overageTime > 0 ? 'bg-red-500/20 text-red-300' :
-                          'bg-green-500/20 text-green-300'
-                        }`}>
-                          {log.canceled ? 'Canceled' : log.overageTime > 0 ? 'Over Time' : 'Completed'}
-                        </span>
-                        {onDeleteLog && (
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onDeleteLog(log.id);
-                            }}
-                            className="text-white/50 hover:text-white/80 p-1 hover:bg-white/10 rounded-full transition-colors"
-                            title="Delete this timer log"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
+                      <label className="inline-flex items-center space-x-2 cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="rounded bg-black/50 border-white/10 w-4 h-4 accent-white/20 focus:ring-0 focus:ring-offset-0"
+                          checked={soundEnabled}
+                          onChange={(e) => onSoundEnabledChange(e.target.checked)}
+                        />
+                        <span className="text-white/80">System sounds</span>
+                      </label>
+                      <div className="text-white/60">
+                        <button 
+                          onClick={() => onSoundEnabledChange(!soundEnabled)}
+                          className="p-1.5 rounded-full hover:bg-black/20 cursor-pointer"
+                          aria-label={soundEnabled ? "Mute system sounds" : "Unmute system sounds"}
+                        >
+                          {getVolumeIcon()}
+                        </button>
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-2 mt-2 text-sm cursor-pointer" onClick={() => handleSelectLog(log.id)}>
-                      <div>
-                        <p className="text-white/60 text-xs">Set / Actual</p>
-                        <p className="font-mono text-sm">
-                          {formatTime(log.initialDuration)} / {formatTime(log.actualDuration)}
-                        </p>
+                    {soundEnabled && (
+                      <div className="pl-6 space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-white/50">Volume</span>
+                          <span className="text-xs text-white/50">{formatVolumePercent(soundVolume)}</span>
+                        </div>
+                        <Slider
+                          defaultValue={[soundVolume * 100]}
+                          max={100}
+                          step={5}
+                          onValueChange={(values) => onSoundVolumeChange(values[0] / 100)}
+                          className="w-full"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="bg-black/30 rounded-md p-3 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <label className="inline-flex items-center space-x-2 cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="rounded bg-black/50 border-white/10 w-4 h-4 accent-white/20 focus:ring-0 focus:ring-offset-0"
+                          checked={countdownSoundEnabled}
+                          onChange={(e) => onCountdownSoundEnabledChange(e.target.checked)}
+                        />
+                        <span className="text-white/80">Countdown sounds</span>
+                      </label>
+                      <div className="text-white/60">
+                        <button 
+                          onClick={() => onCountdownSoundEnabledChange(!countdownSoundEnabled)}
+                          className="p-1.5 rounded-full hover:bg-black/20 cursor-pointer"
+                          aria-label={countdownSoundEnabled ? "Mute countdown sounds" : "Unmute countdown sounds"}
+                        >
+                          {getCountdownVolumeIcon()}
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {countdownSoundEnabled && (
+                      <div className="pl-6 space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-white/50">Volume</span>
+                          <span className="text-xs text-white/50">{formatVolumePercent(countdownSoundVolume)}</span>
+                        </div>
+                        <Slider
+                          defaultValue={[countdownSoundVolume * 100]}
+                          max={100}
+                          step={5}
+                          onValueChange={(values) => onCountdownSoundVolumeChange(values[0] / 100)}
+                          className="w-full"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="bg-black/30 rounded-md p-3">
+                    <label className="inline-flex items-center space-x-2 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="rounded bg-black/50 border-white/10 w-4 h-4 accent-white/20 focus:ring-0 focus:ring-offset-0"
+                        checked={notificationsEnabled}
+                        onChange={(e) => onNotificationsEnabledChange(e.target.checked)}
+                      />
+                      <span className="flex items-center gap-2 text-white/80">
+                        <Bell className="w-4 h-4 text-white/50" />
+                        <span>Show notifications</span>
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="logs" className="space-y-5">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-base font-normal flex items-center gap-2 text-white/90">
+                  <BarChart3 className="w-4 h-4 text-white/50" />
+                  Timer Analytics
+                </h3>
+                {validTimerLogs.length > 0 && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button 
+                        onClick={onClearLogs}
+                        className="p-1.5 text-white/50 hover:text-white hover:bg-white/5 rounded-full transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Clear all logs</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
+
+              {validTimerLogs.length > 0 && !selectedLog && (
+                <div className="bg-black/20 p-4 rounded-lg mb-4">
+                  <h4 className="text-sm font-normal mb-3 text-white/70 flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4" />
+                    Overall Timer Statistics
+                  </h4>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                    <div>
+                      <p className="text-white/50 text-xs">Total Timers</p>
+                      <p className="font-normal">{logStats.totalTimers}</p>
+                    </div>
+                    <div>
+                      <p className="text-white/50 text-xs">Completed</p>
+                      <p className="font-normal text-green-400">{logStats.completedTimers}</p>
+                    </div>
+                    <div>
+                      <p className="text-white/50 text-xs">Canceled</p>
+                      <p className="font-normal text-yellow-400">{logStats.canceledTimers}</p>
+                    </div>
+                    <div>
+                      <p className="text-white/50 text-xs">Over Time</p>
+                      <p className="font-normal text-red-400">{logStats.overageTimers}</p>
+                    </div>
+                    <div className="col-span-2 pt-1 border-t border-white/5">
+                      <p className="text-white/50 text-xs">Total Planned Time</p>
+                      <p className="font-normal">{formatHumanTime(logStats.totalPlannedTime)}</p>
+                    </div>
+                    <div>
+                      <p className="text-white/50 text-xs">Total Actual Time</p>
+                      <p className="font-normal">{formatHumanTime(logStats.totalActualTime)}</p>
+                    </div>
+                    <div>
+                      <p className="text-white/50 text-xs">Total Paused Time</p>
+                      <p className="font-normal text-blue-400">{formatHumanTime(logStats.totalPauseTime)}</p>
+                    </div>
+                    {logStats.totalOverageTime > 0 && (
+                      <div className="col-span-2">
+                        <p className="text-white/50 text-xs">Total Overage Time</p>
+                        <p className="font-normal text-red-400">{formatHumanTime(logStats.totalOverageTime)}</p>
+                      </div>
+                    )}
+                    {logStats.averageEfficiency > 0 && (
+                      <div className="col-span-2">
+                        <p className="text-white/50 text-xs">Average Efficiency</p>
+                        <p className="font-normal text-blue-400">{logStats.averageEfficiency.toFixed(1)}%</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {selectedLog && (
+                <button 
+                  onClick={() => setSelectedLogId(null)}
+                  className="flex items-center text-sm text-white/50 hover:text-white transition-colors mb-4 bg-black/30 px-3 py-1.5 rounded-md"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Back to Timer List
+                </button>
+              )}
+
+              {validTimerLogs.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-white/50 bg-black/20 p-4 rounded-lg">
+                  <Clock className="w-12 h-12 mb-4 opacity-30" />
+                  <p className="text-center">No timer logs yet.</p>
+                  <p className="text-center text-sm mt-1">Start a timer to track your time.</p>
+                </div>
+              ) : selectedLog ? (
+                <div 
+                  className={`p-4 rounded-lg ${
+                    selectedLog.canceled ? 'bg-black/20 border border-yellow-500/20' : 
+                    selectedLog.overageTime > 0 ? 'bg-black/20 border border-red-500/20' : 
+                    'bg-black/20 border border-green-500/20'
+                  }`}
+                >
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-base font-normal">{selectedLog.timerName}</h3>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        selectedLog.canceled ? 'bg-yellow-500/10 text-yellow-300' :
+                        selectedLog.overageTime > 0 ? 'bg-red-500/10 text-red-300' :
+                        'bg-green-500/10 text-green-300'
+                      }`}>
+                        {selectedLog.canceled ? 'Canceled' : selectedLog.overageTime > 0 ? 'Over Time' : 'Completed'}
+                      </span>
+                      {onDeleteLog && (
+                        <button 
+                          onClick={() => {
+                            onDeleteLog(selectedLog.id);
+                            setSelectedLogId(null);
+                          }}
+                          className="text-white/40 hover:text-white/70 p-1 hover:bg-black/30 rounded-full transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-white/60 mb-4 bg-black/30 p-2 rounded-lg">
+                    <div className="flex justify-between">
+                      <span>Started: {formatDate(selectedLog.startTime)}</span>
+                      <span>Ended: {formatDate(selectedLog.endTime)}</span>
+                    </div>
+                    <div className="mt-1">
+                      Total Duration: {getTimeElapsed(selectedLog.startTime, selectedLog.endTime)}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="bg-black/30 p-3 rounded-lg">
+                      <p className="text-white/70 text-xs">Set Time</p>
+                      <p className="text-lg font-mono font-medium">{formatTime(selectedLog.initialDuration)}</p>
+                    </div>
+                    <div className="bg-black/30 p-3 rounded-lg">
+                      <p className="text-white/70 text-xs">Actual Time</p>
+                      <p className="text-lg font-mono font-medium">{formatTime(selectedLog.actualDuration)}</p>
+                    </div>
+                  </div>
+
+                  {selectedLog.analysis && (
+                    <div className="bg-black/30 p-3 rounded-lg mb-4">
+                      <h4 className="flex items-center gap-1 mb-2 text-white/80 font-medium">
+                        <BarChart3 className="w-4 h-4" />
+                        Analytics
+                      </h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <p className="text-blue-400 text-xs">Active Time</p>
+                          <p className="font-mono">{formatTime(selectedLog.analysis.totalActiveTime)}</p>
+                        </div>
+                        {selectedLog.analysis.efficiency !== undefined && (
+                          <div>
+                            <p className="text-blue-400 text-xs">Efficiency</p>
+                            <p className="font-mono">{selectedLog.analysis.efficiency.toFixed(1)}%</p>
+                          </div>
+                        )}
+                        {selectedLog.analysis.averagePauseDuration !== undefined && (
+                          <div>
+                            <p className="text-blue-400 text-xs">Avg Pause</p>
+                            <p className="font-mono">{formatTime(selectedLog.analysis.averagePauseDuration)}</p>
+                          </div>
+                        )}
+                        {selectedLog.analysis.overagePercentage !== undefined && (
+                          <div>
+                            <p className="text-red-400 text-xs">Overage %</p>
+                            <p className="font-mono">{selectedLog.analysis.overagePercentage.toFixed(1)}%</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {selectedLog.pauseCount > 0 && (
+                    <div className="flex items-center bg-blue-500/10 p-2 rounded-lg border border-blue-500/20 mb-4">
+                      <PauseCircle className="w-4 h-4 text-blue-400 mr-2" />
+                      <p className="text-sm">
+                        Paused {selectedLog.pauseCount} {selectedLog.pauseCount === 1 ? 'time' : 'times'} 
+                        {selectedLog.totalPauseDuration > 0 && ` (${formatTime(selectedLog.totalPauseDuration)})`}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {selectedLog.overageTime > 0 && (
+                    <div className="flex items-center bg-red-500/10 p-2 rounded-lg border border-red-500/20 mb-4">
+                      <AlertCircle className="w-4 h-4 text-red-400 mr-2" />
+                      <p className="text-sm text-red-400">
+                        Went over by {formatTime(selectedLog.overageTime)}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="mt-4">
+                    <h4 className="flex items-center gap-2 mb-3 text-white/80 font-medium">
+                      <Clock className="w-4 h-4" />
+                      Timeline of Events
+                    </h4>
+                    
+                    <div className="relative pl-6 border-l border-white/20 space-y-4">
+                      {selectedLog.events.map((event, index) => (
+                        <div key={index} className="relative">
+                          <div className="absolute left-0 top-0 w-5 h-5 -ml-[13px] flex items-center justify-center rounded-full bg-timer-background border border-white/20">
+                            {getEventIcon(event.type)}
+                          </div>
+                          
+                          <div className={`rounded-lg p-3 ml-2 border ${getEventColor(event.type)}`}>
+                            <div className="flex justify-between items-start">
+                              <p className="font-medium">{formatEventType(event.type)}</p>
+                              <p className="text-xs text-white/60 bg-black/20 px-1.5 py-0.5 rounded-full">{formatShortTime(event.timestamp)}</p>
+                            </div>
+                            
+                            <div className="mt-1 text-sm">
+                              {event.timeData && (
+                                <p className="text-white/70 text-xs">
+                                  Time: {event.timeData.hours}h {event.timeData.minutes}m {event.timeData.seconds}s
+                                </p>
+                              )}
+                              
+                              {event.duration && (
+                                <p className="text-blue-400 text-xs">
+                                  Added: {Math.floor(event.duration / 3600)}h {Math.floor((event.duration % 3600) / 60)}m {event.duration % 60}s
+                                </p>
+                              )}
+                              
+                              {event.notes && (
+                                <p className="text-white/80 text-xs mt-1">{event.notes}</p>
+                              )}
+                              
+                              {index > 0 && (
+                                <p className="text-white/40 text-xs mt-1">
+                                  {getTimeElapsed(selectedLog.events[index-1].timestamp, event.timestamp)} after previous
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {validTimerLogs.slice().reverse().map((log) => (
+                    <div 
+                      key={log.id} 
+                      className={`p-3 rounded-lg transition-colors hover:bg-black/30 bg-black/20 border ${
+                        log.canceled ? 'border-yellow-500/20' :
+                        log.overageTime > 0 ? 'border-red-500/20' :
+                        'border-green-500/20'
+                      }`}
+                    >
+                      <div className="flex justify-between items-center">
+                        <h4 className="font-normal flex items-center cursor-pointer" onClick={() => handleSelectLog(log.id)}>
+                          <Timer className="w-4 h-4 mr-2 opacity-50" />
+                          {log.timerName}
+                        </h4>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                            log.canceled ? 'bg-yellow-500/10 text-yellow-300' :
+                            log.overageTime > 0 ? 'bg-red-500/10 text-red-300' :
+                            'bg-green-500/10 text-green-300'
+                          }`}>
+                            {log.canceled ? 'Canceled' : log.overageTime > 0 ? 'Over Time' : 'Completed'}
+                          </span>
+                          {onDeleteLog && (
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDeleteLog(log.id);
+                              }}
+                              className="text-white/40 hover:text-white/70 p-1 hover:bg-black/30 rounded-full transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                       
-                      <div>
-                        <p className="text-white/60 text-xs">Events</p>
-                        <div className="flex gap-1 mt-1">
-                          {Array.from(new Set(log.events.map(e => e.type))).slice(0, 4).map((type, i) => (
-                            <div key={i} className="w-4 h-4">{getEventIcon(type)}</div>
-                          ))}
-                          {log.events.length > 4 && <span className="text-xs text-white/50">+{log.events.length - 4}</span>}
+                      <div className="grid grid-cols-2 gap-2 mt-2 text-sm cursor-pointer" onClick={() => handleSelectLog(log.id)}>
+                        <div>
+                          <p className="text-white/50 text-xs">Set / Actual</p>
+                          <p className="font-normal font-mono text-sm">
+                            {formatTime(log.initialDuration)} / {formatTime(log.actualDuration)}
+                          </p>
                         </div>
+                        
+                        <div>
+                          <p className="text-white/50 text-xs">Events</p>
+                          <div className="flex gap-1 mt-1">
+                            {Array.from(new Set(log.events.map(e => e.type))).slice(0, 4).map((type, i) => (
+                              <div key={i} className="w-4 h-4">{getEventIcon(type)}</div>
+                            ))}
+                            {log.events.length > 4 && <span className="text-xs text-white/40">+{log.events.length - 4}</span>}
+                          </div>
                         </div>
-                      
-                      <div className="col-span-2 mt-1 text-xs text-white/50 flex justify-between">
+                      </div>
+
+                      <div className="col-span-2 mt-1 text-xs text-white/40 flex justify-between">
                         <span>{formatDate(log.startTime).split(',')[0]}</span>
                         <span>{log.analysis?.efficiency ? `${log.analysis.efficiency.toFixed(0)}% efficient` : ''}</span>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </div>
       </SheetContent>
     </Sheet>
   );

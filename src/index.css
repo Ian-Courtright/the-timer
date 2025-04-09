@@ -36,6 +36,11 @@
 
     --timer-background: #1A1A1A;
     --timer-text: #FFFFFF;
+    
+    /* Scrollbar Colors */
+    --scrollbar-track: #232323;
+    --scrollbar-thumb: #3b3b3b;
+    --scrollbar-thumb-hover: #4d4d4d;
   }
 
   .dark {
@@ -66,6 +71,11 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
+    
+    /* Scrollbar Colors for Dark Mode */
+    --scrollbar-track: #232323;
+    --scrollbar-thumb: #3b3b3b;
+    --scrollbar-thumb-hover: #4d4d4d;
   }
 }
 
@@ -82,11 +92,43 @@
   .timer-display {
     font-family: 'Inter', sans-serif;
     font-weight: 700;
+    letter-spacing: -0.05em;
   }
   
   .control-button {
     @apply bg-white/10 hover:bg-white/20 transition-colors duration-300;
   }
+}
+
+/* Custom Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--scrollbar-track);
+}
+
+/* Firefox Scrollbar (for cross-browser support) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
 
 /* Reset Button Style */
@@ -110,3 +152,54 @@
 .reset-button-container:hover {
   transform: scale(1.05);
 }
+
+/* Mobile Improvements */
+@media (max-width: 768px) {
+  .reset-button-container {
+    width: 48px;
+    height: 48px;
+  }
+  
+  .reset-button-image {
+    max-width: 48px;
+  }
+  
+  /* Improve spacing for mobile timer display */
+  .timer-display {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 70vh;
+    padding-bottom: 20vh; /* Make room for controls at bottom */
+    letter-spacing: -0.06em; /* Tighter kerning for larger numbers */
+  }
+  
+  /* Ensure timer digits don't overflow container */
+  .timer-display h1 {
+    overflow: hidden;
+    width: 100%;
+  }
+}
+
+/* Landscape orientation adjustments */
+@media (max-width: 768px) and (orientation: landscape) {
+  .timer-display {
+    min-height: auto;
+    padding-top: 0.5rem;
+    padding-bottom: 6rem;
+  }
+}
+
+/* Huge desktop timer */
+@media (min-width: 769px) {
+  .timer-display {
+    padding-bottom: 15vh;
+    letter-spacing: -0.08em; /* Even tighter kerning for desktop massive text */
+  }
+  
+  .timer-display h1 {
+    line-height: 0.85;
+    margin-bottom: 2rem;
+  }
+}
+

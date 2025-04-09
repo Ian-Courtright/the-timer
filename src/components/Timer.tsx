@@ -392,8 +392,8 @@ const Timer: React.FC<TimerProps> = ({
   };
   
   return (
-    <div ref={timerRef} className="timer-display text-center w-full max-w-4xl px-4">
-      <div className="mb-2">
+    <div ref={timerRef} className="timer-display text-center w-full px-4">
+      <div>
         <input
           ref={nameInputRef}
           type="text"
@@ -407,19 +407,17 @@ const Timer: React.FC<TimerProps> = ({
         />
       </div>
       
-      {/* Single line layout on desktop, stacked on mobile */}
+      {/* Unified layout for all screen sizes */}
       <h1 
         ref={timeDisplayRef}
-        className={`text-[10rem] font-black tracking-tighter leading-none flex flex-col md:flex-row justify-center items-center ${isOverage && countingUp ? 'text-red-500' : 'text-white'}`}
+        className={`font-black tracking-tighter leading-none w-full ${isOverage && countingUp ? 'text-red-500' : 'text-white'}`}
       >
-        {isOverage && countingUp && <span className="mr-2">-</span>}
-        <div className="flex items-center">
+        <div className="flex flex-row items-center justify-center text-[15vw] leading-[0.9] w-full">
+          {isOverage && countingUp && <span className="mr-2">-</span>}
           <span ref={hoursRef} className="inline-block">{formatTimeDigit(time.hours)}</span>
           <span className="inline-block">:</span>
           <span ref={minutesRef} className="inline-block">{formatTimeDigit(time.minutes)}</span>
           <span className="inline-block">:</span>
-        </div>
-        <div className="md:mt-0 -mt-6">
           <span ref={secondsRef} className="inline-block">{formatTimeDigit(time.seconds)}</span>
         </div>
       </h1>

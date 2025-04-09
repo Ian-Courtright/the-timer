@@ -125,11 +125,18 @@ const Index: React.FC = () => {
         case 'r': // r key
           handleReset();
           break;
-        case 'Shift': // Shift key
-          setCustomTimerOpen(true);
+        case 'c': // c key
+          setCustomTimerOpen(prev => !prev);
           break;
         case 's': // s key
-          toggleSettings();
+          if (!settingsOpen) {
+            toggleSettings();
+            setActiveTab("custom");
+          } else if (activeTab !== "custom") {
+            setActiveTab("custom");
+          } else {
+            toggleSettings();
+          }
           break;
         case 'q': // q key
           // Toggle QuickSets
@@ -139,8 +146,13 @@ const Index: React.FC = () => {
           }
           break;
         case 'a': // a key
-          if (settingsOpen) {
+          if (!settingsOpen) {
+            toggleSettings();
             setActiveTab("logs");
+          } else if (activeTab !== "logs") {
+            setActiveTab("logs");
+          } else {
+            toggleSettings();
           }
           break;
       }
@@ -151,7 +163,7 @@ const Index: React.FC = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [customTimerOpen, settingsOpen]);
+  }, [customTimerOpen, settingsOpen, activeTab]);
   
   // Initial page animation - only run once on mount
   useEffect(() => {
@@ -839,7 +851,7 @@ const Index: React.FC = () => {
       <Toaster position="top-center" />
       
       <main ref={mainRef} className="flex-1 flex items-center justify-center px-4 py-8 mt-2">
-        <div className="flex flex-col items-center justify-center w-full max-w-5xl mx-auto">
+        <div className="flex flex-col items-center justify-center w-full mx-auto">
           <Timer 
             isRunning={isRunning} 
             onReset={resetTrigger} 
@@ -858,6 +870,8 @@ const Index: React.FC = () => {
         onReset={handleReset} 
         onSetTimer={handleSetTimer}
         onOpenSettings={toggleSettings}
+        customTimerOpen={customTimerOpen}
+        onCustomTimerOpenChange={setCustomTimerOpen}
       />
       
       <TimerSettings 
@@ -878,6 +892,8 @@ const Index: React.FC = () => {
         onCountdownSoundVolumeChange={handleCountdownSoundVolumeChange}
         notificationsEnabled={notificationsEnabled}
         onNotificationsEnabledChange={handleNotificationsEnabledChange}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
       />
     </div>
   );

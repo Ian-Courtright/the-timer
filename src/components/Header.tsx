@@ -169,7 +169,7 @@ const Header: React.FC<HeaderProps> = ({
   return (
     <header 
       ref={headerRef} 
-      className="fixed top-0 left-0 right-0 flex justify-between items-center w-full py-3 px-6 backdrop-blur-sm z-10"
+      className="fixed top-0 left-0 right-0 flex justify-between items-center w-full py-3 pl-6 pr-0 backdrop-blur-sm z-10"
     >
       {/* Left side with CircularTimer */}
       <div className="flex items-center justify-center ml-2">
@@ -215,7 +215,7 @@ const Header: React.FC<HeaderProps> = ({
       </div>
       
       {/* Right tab - TimerFlow */}
-      <div className="absolute top-0 right-4">
+      <div className="absolute top-0 right-0">
         <Tooltip>
           <TooltipTrigger 
             asChild
@@ -226,7 +226,7 @@ const Header: React.FC<HeaderProps> = ({
           >
             <div 
               ref={timerFlowRef}
-              className="px-6 py-2 bg-[#2A2A2A] rounded-b-lg shadow-md flex items-center justify-center cursor-pointer hover:bg-[#333333] transition-colors"
+              className="px-6 py-2 bg-[#2A2A2A] rounded-bl-lg shadow-md flex items-center justify-center cursor-pointer hover:bg-[#333333] transition-colors"
               onClick={onOpenSettings}
               onMouseEnter={handleTimerFlowMouseEnter}
               onMouseLeave={handleTimerFlowMouseLeave}
@@ -257,7 +257,7 @@ const Header: React.FC<HeaderProps> = ({
                     <span>Reset timer</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <kbd className="px-2 py-0.5 bg-black/40 rounded text-xs font-mono">Shift</kbd>
+                    <kbd className="px-2 py-0.5 bg-black/40 rounded text-xs font-mono">C</kbd>
                     <span>Add custom time</span>
                   </div>
                   <div className="flex items-center gap-2">

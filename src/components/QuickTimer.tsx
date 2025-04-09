@@ -74,7 +74,7 @@ const QuickTimer: React.FC<QuickTimerProps> = ({ onSetTimer }) => {
             onClick={handleApplyCustomTimer}
             className="w-full py-1.5 bg-white/20 hover:bg-white/30 rounded-md transition-colors text-sm"
           >
-            Add Timer
+            Set Timer
           </button>
         </div>
       </PopoverContent>

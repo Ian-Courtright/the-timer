@@ -11,6 +11,8 @@ interface TimerControlsProps {
   onReset: () => void;
   onSetTimer: (hours: number, minutes: number, seconds: number) => void;
   onOpenSettings: () => void;
+  customTimerOpen?: boolean;
+  onCustomTimerOpenChange?: (open: boolean) => void;
 }
 
 const TimerControls: React.FC<TimerControlsProps> = ({ 
@@ -18,10 +20,10 @@ const TimerControls: React.FC<TimerControlsProps> = ({
   onPlayPause,
   onReset,
   onSetTimer,
-  onOpenSettings
+  onOpenSettings,
+  customTimerOpen = false,
+  onCustomTimerOpenChange = () => {}
 }) => {
-  const [customTimerOpen, setCustomTimerOpen] = useState(false);
-  
   // Refs for animation
   const controlsContainerRef = useRef<HTMLDivElement>(null);
   const playPauseButtonRef = useRef<HTMLButtonElement>(null);
@@ -126,25 +128,25 @@ const TimerControls: React.FC<TimerControlsProps> = ({
         repeat: 1
       });
     }
-    setCustomTimerOpen(true);
+    onCustomTimerOpenChange(true);
   };
 
   return (
     <div ref={controlsContainerRef} className="fixed bottom-0 left-0 right-0 pb-8 pt-4 flex flex-col items-center">
-      {/* Play/Pause Button (Center) */}
+      {/* Play/Pause Button */}
       <div className="mb-6">
         <Tooltip>
           <TooltipTrigger asChild>
             <button 
               ref={playPauseButtonRef}
               onClick={handlePlayPauseWithAnimation}
-              className="w-28 h-28 rounded-full bg-white flex items-center justify-center hover:bg-white/90 transition-all duration-300"
+              className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-white flex items-center justify-center hover:bg-white/90 transition-all duration-300"
               aria-label={isRunning ? "Pause" : "Play"}
             >
               {isRunning ? (
-                <Pause className="w-12 h-12 text-[#1A1A1A] fill-current" strokeWidth={0} />
+                <Pause className="w-7 h-7 md:w-8 md:h-8 text-[#1A1A1A] fill-current" strokeWidth={0} />
               ) : (
-                <Play className="w-12 h-12 text-[#1A1A1A] fill-current ml-2" strokeWidth={0} />
+                <Play className="w-7 h-7 md:w-8 md:h-8 text-[#1A1A1A] fill-current ml-1" strokeWidth={0} />
               )}
             </button>
           </TooltipTrigger>
@@ -154,70 +156,70 @@ const TimerControls: React.FC<TimerControlsProps> = ({
         </Tooltip>
       </div>
       
-      {/* Plus Button (Center) */}
-      <div className="mb-6">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              ref={plusButtonRef}
-              onClick={handlePlusWithAnimation}
-              className="w-14 h-14 rounded-lg bg-white flex items-center justify-center hover:bg-white/90 transition-all"
-              aria-label="Add Custom Timer"
-            >
-              <Plus className="w-7 h-7 stroke-[#1A1A1A] stroke-[3]" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent className="bg-[#2A2A2A] text-white border-[#333333]">
-            <p>Shift: Add custom time (when you're hopelessly behind)</p>
-          </TooltipContent>
-        </Tooltip>
-      </div>
-      
-      {/* Side Controls */}
-      <div className="fixed bottom-8 left-0 right-0 flex justify-between px-8">
-        {/* Reset Button (Left) */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button 
-              ref={resetButtonRef}
-              onClick={handleResetWithAnimation}
-              className="flex items-center justify-center reset-button-container"
-              aria-label="Reset"
-            >
-              <img 
-                src="/images/Reset Button.png" 
-                alt="Reset button" 
-                className="reset-button-image"
-              />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent className="bg-[#2A2A2A] text-white border-[#333333]">
-            <p>R: Reset timer (for when you've given up)</p>
-          </TooltipContent>
-        </Tooltip>
+      {/* Controls Row - With reset at far left and settings at far right */}
+      <div className="flex justify-between items-center w-full px-4">
+        {/* Reset Button - Left Side */}
+        <div className="flex items-center">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button 
+                ref={resetButtonRef}
+                onClick={handleResetWithAnimation}
+                className="w-12 h-12 md:w-12 md:h-12 rounded-full hover:bg-white/10 transition-all flex items-center justify-center"
+                aria-label="Reset"
+              >
+                <RotateCcw className="w-6 h-6 md:w-6 md:h-6" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent className="bg-[#2A2A2A] text-white border-[#333333]">
+              <p>R: Reset timer (for when you've given up)</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
         
-        {/* Settings Button (Right) */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button 
-              ref={settingsButtonRef}
-              onClick={handleSettingsWithAnimation}
-              className="p-3 rounded-full hover:bg-white/10 transition-all"
-              aria-label="Settings"
-            >
-              <Settings className="w-8 h-8" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent className="bg-[#2A2A2A] text-white border-[#333333]">
-            <p>S: Settings & Timer Analytics</p>
-          </TooltipContent>
-        </Tooltip>
+        {/* Plus Button - Center, Same size as others */}
+        <div className="flex items-center">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                ref={plusButtonRef}
+                onClick={handlePlusWithAnimation}
+                className="w-12 h-12 md:w-12 md:h-12 rounded-full hover:bg-white/10 transition-all flex items-center justify-center"
+                aria-label="Add Custom Timer"
+              >
+                <Plus className="w-6 h-6 md:w-6 md:h-6" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent className="bg-[#2A2A2A] text-white border-[#333333]">
+              <p>C: Add custom time (when you're hopelessly behind)</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+        
+        {/* Settings Button - Right Side */}
+        <div className="flex items-center">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button 
+                ref={settingsButtonRef}
+                onClick={handleSettingsWithAnimation}
+                className="w-12 h-12 md:w-12 md:h-12 rounded-full hover:bg-white/10 transition-all flex items-center justify-center"
+                aria-label="Settings"
+              >
+                <Settings className="w-6 h-6 md:w-6 md:h-6" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent className="bg-[#2A2A2A] text-white border-[#333333]">
+              <p>S: Settings & Timer Analytics</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
       </div>
       
       {/* Custom Timer Input Component */}
       <CustomTimerInput
         isOpen={customTimerOpen}
-        onClose={() => setCustomTimerOpen(false)}
+        onClose={() => onCustomTimerOpenChange(false)}
         onSetTimer={onSetTimer}
       />
     </div>
