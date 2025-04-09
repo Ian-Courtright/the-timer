@@ -110,6 +110,7 @@ const CircularTimer: React.FC<CircularTimerProps> = ({
       // Set up a continuous animation that will run for the expected duration
       if (pieAnimationRef.current) {
         pieAnimationRef.current.kill();
+        pieAnimationRef.current = null;
       }
       
       const startDegrees = 360 * ((100 - progress) / 100);
@@ -124,32 +125,38 @@ const CircularTimer: React.FC<CircularTimerProps> = ({
         {
           backgroundImage: `conic-gradient(transparent 0deg, transparent 0deg, #ffffff 0deg, #ffffff 360deg)`,
           duration: expectedDuration,
-          ease: "linear"
+          ease: "linear",
+          onComplete: () => {
+            // Ensure clean state after animation completes
+            if (pieRef.current) {
+              gsap.set(pieRef.current, {
+                backgroundImage: `conic-gradient(transparent 0deg, transparent 0deg, #ffffff 0deg, #ffffff 360deg)`
+              });
+            }
+          }
         }
       );
-    } else if (isStopping && pieRef.current) {
-      // Timer stopped - pause any running animation
+    }
+
+    if (isStopping) {
+      // Kill any running animations when timer stops
       if (pieAnimationRef.current) {
-        pieAnimationRef.current.pause();
+        pieAnimationRef.current.kill();
+        pieAnimationRef.current = null;
       }
-    } else if (isRunning && prevIsRunning && pieRef.current && pieAnimationRef.current && pieAnimationRef.current.paused()) {
-      // Already running - ensure animation is also running
-      pieAnimationRef.current.resume();
     }
-    
-    // Update container animation (bounce effect when starting)
-    if (containerRef.current && isStarting) {
-      gsap.to(containerRef.current, {
-        scale: 1.05,
-        duration: 0.3,
-        ease: "back.out(1.7)",
-        yoyo: true,
-        repeat: 1
-      });
-    }
-    
+
+    // Update previous state
     setPrevIsRunning(isRunning);
-  }, [isRunning, prevIsRunning, progress, isCountingUp, isOverage]);
+
+    // Cleanup on unmount or when dependencies change
+    return () => {
+      if (pieAnimationRef.current) {
+        pieAnimationRef.current.kill();
+        pieAnimationRef.current = null;
+      }
+    };
+  }, [isRunning, prevIsRunning, isCountingUp, isOverage, progress]);
   
   // Smoothly update progress while running
   useEffect(() => {
@@ -160,6 +167,7 @@ const CircularTimer: React.FC<CircularTimerProps> = ({
         // Kill existing animation if there is one
         if (pieAnimationRef.current) {
           pieAnimationRef.current.kill();
+          pieAnimationRef.current = null;
         }
         
         // Save current progress for next comparison
@@ -179,11 +187,26 @@ const CircularTimer: React.FC<CircularTimerProps> = ({
           {
             backgroundImage: `conic-gradient(transparent 0deg, transparent 0deg, #ffffff 0deg, #ffffff 360deg)`,
             duration: expectedDuration,
-            ease: "linear"
+            ease: "linear",
+            onComplete: () => {
+              // Ensure clean state after animation completes
+              if (pieRef.current) {
+                gsap.set(pieRef.current, {
+                  backgroundImage: `conic-gradient(transparent 0deg, transparent 0deg, #ffffff 0deg, #ffffff 360deg)`
+                });
+              }
+            }
           }
         );
       }
     }
+
+    return () => {
+      if (pieAnimationRef.current) {
+        pieAnimationRef.current.kill();
+        pieAnimationRef.current = null;
+      }
+    };
   }, [progress, isRunning, isCountingUp, isOverage]);
   
   // Update animation when state changes (count up/overage transitions)
@@ -374,15 +397,6 @@ const CircularTimer: React.FC<CircularTimerProps> = ({
       }
     };
   }, [isOverage, isRunning, prevIsOverage]);
-
-  // Clean up animations when component unmounts
-  useEffect(() => {
-    return () => {
-      if (pieAnimationRef.current) {
-        pieAnimationRef.current.kill();
-      }
-    };
-  }, []);
 
   return (
     <div ref={containerRef} className="relative w-28 h-28">

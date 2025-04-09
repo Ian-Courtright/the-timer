@@ -227,7 +227,10 @@ const Header: React.FC<HeaderProps> = ({
             <div 
               ref={timerFlowRef}
               className="px-6 py-2 bg-[#2A2A2A] rounded-bl-lg shadow-md flex items-center justify-center cursor-pointer hover:bg-[#333333] transition-colors"
-              onClick={onOpenSettings}
+              onClick={() => {
+                soundEffects.playSettingsPlusQuickset();
+                onOpenSettings();
+              }}
               onMouseEnter={handleTimerFlowMouseEnter}
               onMouseLeave={handleTimerFlowMouseLeave}
               data-tooltip="settings"

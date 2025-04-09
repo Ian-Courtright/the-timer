@@ -120,21 +120,27 @@ const Index: React.FC = () => {
       switch (e.key) {
         case ' ': // Space bar
           e.preventDefault(); // Prevent page scroll
+          soundEffects.playPlayPause();
           handlePlayPause();
           break;
         case 'r': // r key
+          soundEffects.playReset();
           handleReset();
           break;
         case 'c': // c key
+          soundEffects.playSettingsPlusQuickset();
           setCustomTimerOpen(prev => !prev);
           break;
         case 's': // s key
           if (!settingsOpen) {
+            soundEffects.playSettingsPlusQuickset();
             toggleSettings();
             setActiveTab("custom");
           } else if (activeTab !== "custom") {
+            soundEffects.playSettingsPlusQuickset();
             setActiveTab("custom");
           } else {
+            soundEffects.playSettingsPlusQuickset();
             toggleSettings();
           }
           break;
@@ -147,11 +153,14 @@ const Index: React.FC = () => {
           break;
         case 'a': // a key
           if (!settingsOpen) {
+            soundEffects.playSettingsPlusQuickset();
             toggleSettings();
             setActiveTab("logs");
           } else if (activeTab !== "logs") {
+            soundEffects.playSettingsPlusQuickset();
             setActiveTab("logs");
           } else {
+            soundEffects.playSettingsPlusQuickset();
             toggleSettings();
           }
           break;

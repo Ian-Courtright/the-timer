@@ -227,9 +227,7 @@ const Timer: React.FC<TimerProps> = ({
       // Check if we should start counting up immediately
       if (!countingUp && time.hours === 0 && time.minutes === 0 && time.seconds === 0) {
         setCountingUp(true);
-        // Note: We're now playing the sound in the dedicated sound effect above
         // Only set overage if we initially had a countdown timer
-        // Check initialTime to determine if this was a countdown timer or just a count-up timer
         if (initialTime && (initialTime.hours > 0 || initialTime.minutes > 0 || initialTime.seconds > 0)) {
           setIsOverage(true);
         }
@@ -239,14 +237,10 @@ const Timer: React.FC<TimerProps> = ({
         setTime(prevTime => {
           // Count down logic
           if (!countingUp) {
-            // Note: We've moved the sound playing logic to a dedicated effect above
-            
             // If timer reaches 0, switch to counting up
             if (prevTime.hours === 0 && prevTime.minutes === 0 && prevTime.seconds === 0) {
               // Show completion notification only once
               if (!hasCompleted) {
-                // Note: We're now playing the sound in the dedicated effect above
-                // Remove toast notification
                 setHasCompleted(true);
                 setCountingUp(true);
                 // Set overage flag only if this was a countdown timer (initialTime > 0)
@@ -255,7 +249,7 @@ const Timer: React.FC<TimerProps> = ({
                 }
               }
               
-              // Start counting up from 0
+              // Ensure we don't return undefined or invalid state
               return { hours: 0, minutes: 0, seconds: 1 };
             }
             
@@ -273,12 +267,13 @@ const Timer: React.FC<TimerProps> = ({
               newHours -= 1;
             }
             
+            // Ensure we never return negative values
             return {
-              hours: newHours,
-              minutes: newMinutes,
-              seconds: newSeconds
+              hours: Math.max(0, newHours),
+              minutes: Math.max(0, newMinutes),
+              seconds: Math.max(0, newSeconds)
             };
-          } 
+          }
           // Count up logic
           else {
             let newSeconds = prevTime.seconds + 1;
@@ -306,9 +301,12 @@ const Timer: React.FC<TimerProps> = ({
     }
     
     return () => {
-      if (interval) clearInterval(interval);
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
     };
-  }, [isRunning, hasCompleted, countingUp, time.hours, time.minutes, time.seconds, initialTime]);
+  }, [isRunning, hasCompleted, countingUp, initialTime]);
   
   // Handle reset - now reset will always set the time to 0:00:00 from the parent component
   useEffect(() => {
@@ -393,7 +391,7 @@ const Timer: React.FC<TimerProps> = ({
   
   return (
     <div ref={timerRef} className="timer-display text-center w-full px-4">
-      <div>
+      <div className="relative z-10">
         <input
           ref={nameInputRef}
           type="text"
