@@ -374,7 +374,8 @@ const Timer: React.FC<TimerProps> = ({
   const handleNameFocus = () => {
     if (nameInputRef.current) {
       gsap.to(nameInputRef.current, {
-        opacity: 0.9,
+        opacity: 1,
+        borderBottom: '1px solid rgba(255, 255, 255, 0.3)',
         duration: 0.3
       });
     }
@@ -383,7 +384,8 @@ const Timer: React.FC<TimerProps> = ({
   const handleNameBlur = () => {
     if (nameInputRef.current) {
       gsap.to(nameInputRef.current, {
-        opacity: 0.5,
+        opacity: name ? 0.6 : 0.4,
+        borderBottom: '1px solid rgba(255, 255, 255, 0)',
         duration: 0.3
       });
     }
@@ -399,8 +401,8 @@ const Timer: React.FC<TimerProps> = ({
           onChange={handleNameChange}
           onFocus={handleNameFocus}
           onBlur={handleNameBlur}
-          placeholder="Name your timer..."
-          className="bg-transparent border-none text-center text-white text-lg opacity-50 hover:opacity-80 focus:opacity-90 transition-opacity outline-none w-full max-w-xs mx-auto"
+          placeholder="Add a timer name..."
+          className="bg-transparent border-none text-center text-white text-lg opacity-60 hover:opacity-80 focus:opacity-100 transition-opacity outline-none w-full max-w-xs mx-auto border-b border-transparent"
           aria-label="Timer name"
         />
       </div>

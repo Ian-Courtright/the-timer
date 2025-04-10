@@ -4,6 +4,7 @@ import Header from '@/components/Header';
 import Timer from '@/components/Timer';
 import TimerControls from '@/components/TimerControls';
 import TimerSettings from '@/components/TimerSettings';
+import TimerOutcomeModal, { TimerOutcome } from '@/components/TimerOutcomeModal';
 import { v4 as uuidv4 } from 'uuid';
 import gsap from 'gsap';
 import { TimerLog, TimeData, TimerEvent } from '@/lib/types';
@@ -14,10 +15,9 @@ const analyzeTimerLog = (log: TimerLog): TimerLog => {
   // Calculate total active time (exclude pauses)
   const totalActiveTime = log.actualDuration - (log.totalPauseDuration || 0);
   
-  // Calculate efficiency (how close was actual time to planned time)
-  // Only calculate if initial duration was set (not for count-up timers)
-  const efficiency = log.initialDuration > 0 
-    ? (log.initialDuration / totalActiveTime) * 100 
+  // Calculate efficiency (active time ÷ total time)
+  const efficiency = log.actualDuration > 0 
+    ? (totalActiveTime / log.actualDuration) * 100 
     : undefined;
 
   // Calculate average pause duration
@@ -30,13 +30,99 @@ const analyzeTimerLog = (log: TimerLog): TimerLog => {
     ? (log.overageTime / log.initialDuration) * 100
     : undefined;
 
+  // Process pause details from events
+  const pauseDetails: Array<{startTime: Date, endTime?: Date, duration?: number}> = [];
+  const activePeriods: Array<{startTime: Date, endTime: Date, duration: number}> = [];
+  
+  // Track start of active period
+  let activeStartTime: Date = log.startTime;
+  
+  // Process events chronologically
+  if (log.events && log.events.length > 0) {
+    // Sort events by timestamp
+    const sortedEvents = [...log.events].sort(
+      (a, b) => a.timestamp.getTime() - b.timestamp.getTime()
+    );
+    
+    let lastPauseStartTime: Date | null = null;
+    
+    sortedEvents.forEach((event, index) => {
+      if (event.type === 'pause') {
+        lastPauseStartTime = event.timestamp;
+        
+        // If this is a pause, the active period ends here
+        if (activeStartTime) {
+          const activeEndTime = event.timestamp;
+          const activeDuration = Math.floor((activeEndTime.getTime() - activeStartTime.getTime()) / 1000);
+          
+          if (activeDuration > 0) {
+            activePeriods.push({
+              startTime: activeStartTime,
+              endTime: activeEndTime,
+              duration: activeDuration
+            });
+          }
+        }
+      } 
+      else if (event.type === 'resume' && lastPauseStartTime) {
+        // Calculate pause duration and add to pauseDetails
+        const pauseDuration = Math.floor(
+          (event.timestamp.getTime() - lastPauseStartTime.getTime()) / 1000
+        );
+        
+        pauseDetails.push({
+          startTime: lastPauseStartTime,
+          endTime: event.timestamp,
+          duration: pauseDuration
+        });
+        
+        // Add pauseDuration to the resume event for reference
+        event.pauseDuration = pauseDuration;
+        
+        // New active period starts
+        activeStartTime = event.timestamp;
+        lastPauseStartTime = null;
+      }
+      else if (event.type === 'start') {
+        // Timer started, begin active period
+        activeStartTime = event.timestamp;
+      }
+      else if ((event.type === 'complete' || event.type === 'reset') && activeStartTime) {
+        // Timer completed or reset, end active period
+        const activeEndTime = event.timestamp;
+        const activeDuration = Math.floor((activeEndTime.getTime() - activeStartTime.getTime()) / 1000);
+        
+        if (activeDuration > 0) {
+          activePeriods.push({
+            startTime: activeStartTime,
+            endTime: activeEndTime,
+            duration: activeDuration
+          });
+        }
+      }
+    });
+    
+    // If timer ended while paused, add the incomplete pause
+    if (lastPauseStartTime) {
+      pauseDetails.push({
+        startTime: lastPauseStartTime,
+        endTime: log.endTime,
+        duration: Math.floor((log.endTime.getTime() - lastPauseStartTime.getTime()) / 1000)
+      });
+    }
+  }
+
   return {
     ...log,
+    pauseDetails,
     analysis: {
       totalActiveTime,
       efficiency,
       averagePauseDuration,
-      overagePercentage
+      overagePercentage,
+      initialCountdownTime: log.initialDuration,
+      actualTimeSpent: log.actualDuration,
+      activePeriods
     }
   };
 };
@@ -67,6 +153,15 @@ const showTimerCompletionNotification = (timerName?: string) => {
   }
 };
 
+// Helper function to format seconds into HH:MM:SS format
+const formatTime = (totalSeconds: number): string => {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  
+  return `${hours > 0 ? `${hours}h ` : ''}${minutes > 0 ? `${minutes}m ` : ''}${seconds}s`;
+};
+
 const Index: React.FC = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [resetTrigger, setResetTrigger] = useState(0);
@@ -87,6 +182,9 @@ const Index: React.FC = () => {
   // Timer logs state
   const [timerLogs, setTimerLogs] = useState<TimerLog[]>([]);
   const [activeTimerLog, setActiveTimerLog] = useState<TimerLog | null>(null);
+  
+  // Outcome modal state
+  const [outcomeModalOpen, setOutcomeModalOpen] = useState(false);
   
   // Sound settings state
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
@@ -373,41 +471,31 @@ const Index: React.FC = () => {
   // Handle start of a new timer
   const startNewTimerLog = useCallback(() => {
     if (!isRunning) {
-      const initialSeconds = timerInitialTime.hours * 3600 + timerInitialTime.minutes * 60 + timerInitialTime.seconds;
-      const now = new Date();
+      // Create a new timer log
+      const startTime = new Date();
+      const totalSeconds = timerInitialTime.hours * 3600 + timerInitialTime.minutes * 60 + timerInitialTime.seconds;
       
-      // Create the start event
+      // Create initial event
       const startEvent: TimerEvent = {
         type: 'start',
-        timestamp: now,
+        timestamp: startTime,
         timeData: { ...timerInitialTime }
       };
       
-      // Add set-timer event if timer was set to a specific time
-      const setTimerEvent: TimerEvent[] = initialSeconds > 0 ? [{
-        type: 'set-timer',
-        timestamp: new Date(now.getTime() - 1), // Just before start
-        timeData: { ...timerInitialTime },
-        notes: `Timer set to ${initialSeconds} seconds`
-      }] : [];
-      
-      // Create a log for any timer (count up or with duration)
+      // Create new timer log with current timer name
       const newLog: TimerLog = {
         id: uuidv4(),
-        timerName: timerName || "Unnamed Timer",
-        startTime: now,
-        endTime: now, // Will be updated when timer stops
-        initialDuration: initialSeconds,
-        actualDuration: 0, // Will be updated when timer stops
+        timerName: timerName, // Use the current timer name
+        startTime,
+        endTime: new Date(), // Will be updated when timer ends
+        initialDuration: totalSeconds,
+        actualDuration: 0, // Will be calculated when timer ends
         completed: false,
         canceled: false,
         overageTime: 0,
         pauseCount: 0,
         totalPauseDuration: 0,
-        events: [
-          ...setTimerEvent,
-          startEvent
-        ]
+        events: [startEvent]
       };
       
       console.log('Creating new timer log:', newLog);
@@ -418,8 +506,8 @@ const Index: React.FC = () => {
   // Track pause time
   const [lastPauseTime, setLastPauseTime] = useState<Date | null>(null);
   
-  // End active timer log
-  const endTimerLog = useCallback((canceled: boolean = false) => {
+  // End active timer log with outcome
+  const endTimerLog = useCallback((outcome: TimerOutcome, canceled: boolean = false, outcomeNote?: string) => {
     if (activeTimerLog) {
       const now = new Date();
       const actualDuration = Math.floor((now.getTime() - activeTimerLog.startTime.getTime()) / 1000);
@@ -443,15 +531,18 @@ const Index: React.FC = () => {
         type: eventType as 'reset' | 'complete',
         timestamp: now,
         timeData: { ...currentTime },
-        notes: canceled ? 'Timer was reset' : 'Timer completed'
+        notes: outcomeNote || (canceled ? 'Timer was reset' : 'Timer completed')
       }] : [];
       
       const updatedLog: TimerLog = {
         ...activeTimerLog,
+        timerName: timerName, // Ensure the current timer name is saved
         endTime: now,
         actualDuration,
-        completed: !canceled,
-        canceled,
+        completed: outcome === 'completed',
+        canceled: outcome === 'cancelled',
+        outcome,
+        outcomeNote,
         overageTime,
         // Ensure pause fields are included
         pauseCount: activeTimerLog.pauseCount || 0,
@@ -469,160 +560,196 @@ const Index: React.FC = () => {
       setActiveTimerLog(null);
       setLastPauseTime(null); // Reset pause tracking
     }
-  }, [activeTimerLog, isOverage, currentTime]);
+  }, [activeTimerLog, isOverage, currentTime, timerName]);
   
+  // Handle Play/Pause button click
   const handlePlayPause = useCallback(() => {
     const now = new Date();
     
-    // If starting timer
     if (!isRunning) {
-      // If we have an active timer log with pauses, update pause duration and add resume event
-      if (activeTimerLog && lastPauseTime) {
-        const pauseDuration = Math.floor((now.getTime() - lastPauseTime.getTime()) / 1000);
-        setActiveTimerLog(prev => {
-          if (!prev) return null;
-          return {
-            ...prev,
-            totalPauseDuration: (prev.totalPauseDuration || 0) + pauseDuration,
-            events: [
-              ...(prev.events || []),
-              {
-                type: 'resume',
-                timestamp: now,
-                timeData: { ...currentTime },
-                notes: `Resumed after ${pauseDuration} seconds pause`
-              }
-            ]
-          };
-        });
-        setLastPauseTime(null); // Reset pause time
-      } else {
-        // Start a new timer log when playing
+      // Starting or resuming the timer
+      if (!activeTimerLog) {
+        // Start a new timer
         startNewTimerLog();
-      }
-      
-      // If current time is 0 and timer is not running, we're about to start counting up
-      if (currentTime.hours === 0 && currentTime.minutes === 0 && currentTime.seconds === 0) {
-        setIsCountingUp(true);
-        // But we're NOT in overage mode because we didn't count down to zero
-        setIsOverage(false);
-        
-        // Ensure we have a log even for count-up timers with no initial duration
-        if (!activeTimerLog) {
-          startNewTimerLog();
+      } else {
+        // Resuming from a pause
+        // Calculate pause duration if there's a lastPauseTime
+        if (lastPauseTime) {
+          const pauseDuration = Math.floor((now.getTime() - lastPauseTime.getTime()) / 1000);
+          
+          // Create a pause details entry
+          const pauseDetails = {
+            startTime: lastPauseTime,
+            endTime: now,
+            duration: pauseDuration
+          };
+          
+          // Add resume event with pause duration
+          addEventToLog('resume', {
+            pauseDuration,
+            notes: `Resumed after pausing for ${formatTime(pauseDuration)}`
+          });
+          
+          // Update the active timer log with the pause duration and details
+          setActiveTimerLog(prev => {
+            if (!prev) return null;
+            
+            // Calculate total pause duration
+            const totalPauseDuration = (prev.totalPauseDuration || 0) + pauseDuration;
+            
+            // Add this pause to the pauseDetails array
+            const pauseDetailsArray = prev.pauseDetails || [];
+            
+            return {
+              ...prev,
+              totalPauseDuration,
+              pauseDetails: [...pauseDetailsArray, pauseDetails]
+            };
+          });
+          
+          // Reset lastPauseTime since we've resumed
+          setLastPauseTime(null);
+        } else {
+          // No lastPauseTime, just add a resume event
+          addEventToLog('resume');
         }
-      } else if (currentTime.hours > 0 || currentTime.minutes > 0 || currentTime.seconds > 0) {
-        // If we have time set, we're starting a countdown timer
-        setIsCountingUp(false);
-        setIsOverage(false);
       }
     } else {
       // If pausing, record the pause time and increment pause count
       if (activeTimerLog) {
+        // Set the pause start time
         setLastPauseTime(now);
+        
+        // Add pause event
+        addEventToLog('pause', {
+          notes: `Paused with ${currentTime.hours}h ${currentTime.minutes}m ${currentTime.seconds}s remaining`
+        });
+        
+        // Increment pause count
         setActiveTimerLog(prev => {
           if (!prev) return null;
           return {
             ...prev,
-            pauseCount: (prev.pauseCount || 0) + 1,
-            events: [
-              ...(prev.events || []),
-              {
-                type: 'pause',
-                timestamp: now,
-                timeData: { ...currentTime },
-                notes: `Paused with ${currentTime.hours}h ${currentTime.minutes}m ${currentTime.seconds}s remaining`
-              }
-            ]
+            pauseCount: (prev.pauseCount || 0) + 1
           };
         });
       }
     }
     
     setIsRunning(prev => !prev);
-  }, [isRunning, currentTime, startNewTimerLog, activeTimerLog, lastPauseTime]);
+  }, [isRunning, currentTime, startNewTimerLog, activeTimerLog, lastPauseTime, addEventToLog]);
   
-  const handleReset = useCallback(() => {
-    // If timer is running, log it as canceled
+  // Handle setting a new timer
+  const handleSetTimer = useCallback((hours: number, minutes: number, seconds: number) => {
+    // If there's already a timer running, confirm changing it
     if (activeTimerLog) {
-      endTimerLog(true);
+      // Pause the timer if running
+      if (isRunning) {
+        setIsRunning(false);
+      }
+      
+      // Show the outcome modal
+      setOutcomeModalOpen(true);
+      
+      // Store the requested new timer values to apply after outcome selection
+      setPendingNewTimer({ hours, minutes, seconds });
+    } else {
+      // Apply the new timer directly if no active timer
+      applyNewTimer(hours, minutes, seconds);
     }
+  }, [activeTimerLog, isRunning]);
+  
+  // State to track pending new timer after outcome selection
+  const [pendingNewTimer, setPendingNewTimer] = useState<TimeData | null>(null);
+  
+  // Apply a new timer after confirming the outcome of the previous timer
+  const applyNewTimer = useCallback((hours: number, minutes: number, seconds: number) => {
+    // Set new initial time
+    setTimerInitialTime({ hours, minutes, seconds });
     
-    setIsRunning(false);
+    // Reset current time to match the new initial time
+    setCurrentTime({ hours, minutes, seconds });
+    
+    // Reset counting flags
     setIsCountingUp(false);
     setIsOverage(false);
     
-    // Always reset to zero
-    setTimerInitialTime({ hours: 0, minutes: 0, seconds: 0 });
-    setCurrentTime({ hours: 0, minutes: 0, seconds: 0 });
-    // Clear the timer name
-    setTimerName("");
-    
+    // Trigger reset animation
     setResetTrigger(prev => prev + 1);
-  }, [activeTimerLog, endTimerLog]);
+    
+    // Add set-timer event if there's an active timer
+    if (activeTimerLog) {
+      addEventToLog('set-timer', {
+        timeData: { hours, minutes, seconds },
+        notes: `Set timer to ${hours}h ${minutes}m ${seconds}s`
+      });
+    }
+    
+    // Set default name if empty
+    if (!timerName) {
+      setTimerName(`${hours}h ${minutes}m ${seconds}s Timer`);
+    }
+  }, [activeTimerLog, addEventToLog, timerName]);
   
-  const handleSetTimer = useCallback((hours: number, minutes: number, seconds: number) => {
-    // If timer is already running and not in counting up mode, add time instead of replacing
-    if (isRunning && !isCountingUp) {
-      // Calculate total seconds for easier addition
-      const currentTotalSeconds = currentTime.hours * 3600 + currentTime.minutes * 60 + currentTime.seconds;
-      const addedTotalSeconds = hours * 3600 + minutes * 60 + seconds;
-      const newTotalSeconds = currentTotalSeconds + addedTotalSeconds;
+  // Handle timer outcome selection - also handles setting new timer if one is pending
+  const handleTimerOutcome = useCallback((outcome: TimerOutcome, note?: string) => {
+    // Based on outcome, set the appropriate flags
+    const isCanceled = outcome === 'cancelled' || outcome === 'scrapped';
+    
+    // End the timer log with the selected outcome
+    endTimerLog(outcome, isCanceled, note);
+    
+    // Check if we have a pending new timer to apply
+    if (pendingNewTimer) {
+      // Apply the pending new timer
+      applyNewTimer(pendingNewTimer.hours, pendingNewTimer.minutes, pendingNewTimer.seconds);
       
-      // Convert total seconds back to hours, minutes, seconds
-      const newHours = Math.floor(newTotalSeconds / 3600);
-      const newMinutes = Math.floor((newTotalSeconds % 3600) / 60);
-      const newSeconds = newTotalSeconds % 60;
-      
-      // Update both current and initial times
-      const newTime = { hours: newHours, minutes: newMinutes, seconds: newSeconds };
-      setTimerInitialTime(newTime);
-      setCurrentTime(newTime);
-      
-      // Log the time addition in the active timer
-      if (activeTimerLog) {
-        const now = new Date();
-        setActiveTimerLog(prev => {
-          if (!prev) return null;
-          const updatedInitialDuration = prev.initialDuration + addedTotalSeconds;
-          return {
-            ...prev,
-            initialDuration: updatedInitialDuration,
-            events: [
-              ...(prev.events || []),
-              {
-                type: 'add-time',
-                timestamp: now,
-                timeData: { hours, minutes, seconds },
-                duration: addedTotalSeconds,
-                notes: `Added ${hours}h ${minutes}m ${seconds}s to timer`
-              }
-            ]
-          };
-        });
-      }
-      
-      // Notify user of added time
-      toast.success(`Added ${hours > 0 ? `${hours}h ` : ''}${minutes > 0 ? `${minutes}m ` : ''}${seconds > 0 ? `${seconds}s` : ''} to timer`);
+      // Clear the pending timer
+      setPendingNewTimer(null);
     } else {
-      // If a timer was running, log it as canceled
-      if (activeTimerLog) {
-        endTimerLog(true);
-      }
-      
-      // Add a set-timer event
-      const totalSeconds = hours * 3600 + minutes * 60 + seconds;
-      
-      // Original behavior - replace timer with new value
+      // Reset the timer UI
       setIsRunning(false);
-      setTimerInitialTime({ hours, minutes, seconds });
-      setCurrentTime({ hours, minutes, seconds });
-      setProgress(100); // Reset progress to 100% when setting a new timer
+      setTimerInitialTime({ hours: 0, minutes: 0, seconds: 0 });
+      setCurrentTime({ hours: 0, minutes: 0, seconds: 0 });
+      setProgress(100);
       setIsCountingUp(false);
       setIsOverage(false);
+      
+      // Reset the timer name on full reset
+      setTimerName('');
+      
+      // Animate the reset
       setResetTrigger(prev => prev + 1);
     }
-  }, [isRunning, isCountingUp, currentTime, activeTimerLog, endTimerLog]);
+    
+    // Show success message
+    toast.success(`Timer ${outcome === 'completed' ? 'completed' : 'ended'} - ${outcome}`);
+  }, [endTimerLog, pendingNewTimer, applyNewTimer]);
+  
+  // Handle Reset button click - now shows outcome modal instead of immediately resetting
+  const handleReset = useCallback(() => {
+    // Only show outcome modal if there's an active timer log
+    if (activeTimerLog) {
+      // Pause the timer if it's running
+      if (isRunning) {
+        setIsRunning(false);
+      }
+      
+      // Show the outcome modal
+      setOutcomeModalOpen(true);
+    } else {
+      // If no active timer log, just reset the UI
+      setIsRunning(false);
+      setTimerInitialTime({ hours: 0, minutes: 0, seconds: 0 });
+      setCurrentTime({ hours: 0, minutes: 0, seconds: 0 });
+      setProgress(100);
+      setIsCountingUp(false);
+      setIsOverage(false);
+      setTimerName('');
+      setResetTrigger(prev => prev + 1);
+      toast.success('Timer has been reset');
+    }
+  }, [activeTimerLog, isRunning]);
   
   const handleNameChange = useCallback((name: string) => {
     setTimerName(name);
@@ -630,6 +757,18 @@ const Index: React.FC = () => {
     // Update active timer log name if exists
     if (activeTimerLog) {
       setActiveTimerLog(prev => prev ? { ...prev, timerName: name } : null);
+      
+      // Save the updated timer log to the timerLogs array in real-time
+      setTimerLogs(prevLogs => {
+        if (!prevLogs || !activeTimerLog) return prevLogs;
+        const updatedLogs = prevLogs.map(log => 
+          log.id === activeTimerLog.id ? { ...log, timerName: name } : log
+        );
+        
+        // Persist to localStorage immediately
+        localStorage.setItem('timerLogs', JSON.stringify(updatedLogs));
+        return updatedLogs;
+      });
     }
   }, [activeTimerLog]);
   
@@ -755,6 +894,28 @@ const Index: React.FC = () => {
     // Remove toast notification
   }, []);
 
+  // Function to update a timer log's name
+  const handleUpdateLogName = useCallback((logId: string, newName: string) => {
+    setTimerLogs(prevLogs => {
+      const updatedLogs = prevLogs.map(log => 
+        log.id === logId ? { ...log, timerName: newName } : log
+      );
+      
+      // Save updated logs to localStorage
+      localStorage.setItem('timerLogs', JSON.stringify(updatedLogs));
+      
+      // If this is the active timer log, update its name too
+      if (activeTimerLog && activeTimerLog.id === logId) {
+        setTimerName(newName);
+        setActiveTimerLog(prev => prev ? { ...prev, timerName: newName } : null);
+      }
+      
+      return updatedLogs;
+    });
+    
+    toast.success(`Timer name updated to "${newName}"`);
+  }, [activeTimerLog]);
+  
   // Load sound settings from localStorage
   useEffect(() => {
     // Load sound settings from localStorage
@@ -847,6 +1008,17 @@ const Index: React.FC = () => {
     setCountdownSoundVolume(volume);
   }, []);
 
+  // Track overage state changes
+  useEffect(() => {
+    // If overage state has just become true, add an event to the timer log
+    if (isOverage && activeTimerLog) {
+      // Add overage-start event to the log
+      addEventToLog('overage-start', {
+        notes: 'Timer went into overage mode'
+      });
+    }
+  }, [isOverage, activeTimerLog, addEventToLog]);
+
   return (
     <div ref={pageRef} className="min-h-screen bg-[#222] text-white flex flex-col overflow-hidden">
       <Header 
@@ -890,6 +1062,7 @@ const Index: React.FC = () => {
         timerLogs={timerLogs}
         onClearLogs={handleClearLogs}
         onDeleteLog={handleDeleteLog}
+        onUpdateLogName={handleUpdateLogName}
         title="Timer Settings"
         soundEnabled={soundEnabled}
         onSoundEnabledChange={handleSoundEnabledChange}
@@ -903,6 +1076,13 @@ const Index: React.FC = () => {
         onNotificationsEnabledChange={handleNotificationsEnabledChange}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+      />
+      
+      {/* Timer Outcome Modal */}
+      <TimerOutcomeModal
+        isOpen={outcomeModalOpen}
+        onClose={() => setOutcomeModalOpen(false)}
+        onConfirm={handleTimerOutcome}
       />
     </div>
   );
