@@ -45,6 +45,11 @@ const Timer: React.FC<TimerProps> = ({
   // Add a flag to track if this is a fresh start or reset
   const isFreshStartRef = useRef(true);
   
+  // Add refs for accurate time tracking
+  const startTimeRef = useRef<number | null>(null);
+  const lastTickRef = useRef<number | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  
   // Handle initial time set
   useEffect(() => {
     if (initialTime) {
@@ -219,91 +224,110 @@ const Timer: React.FC<TimerProps> = ({
     }
   }, [time.seconds, isRunning, countingUp, time.hours, time.minutes, initialTime]);
   
-  // Handle timer counting
+  // Handle timer counting - updated implementation
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-    
     if (isRunning) {
-      // Check if we should start counting up immediately
-      if (!countingUp && time.hours === 0 && time.minutes === 0 && time.seconds === 0) {
-        setCountingUp(true);
-        // Only set overage if we initially had a countdown timer
-        if (initialTime && (initialTime.hours > 0 || initialTime.minutes > 0 || initialTime.seconds > 0)) {
-          setIsOverage(true);
-        }
+      // Initialize start time if not set
+      if (!startTimeRef.current) {
+        startTimeRef.current = Date.now();
+        lastTickRef.current = Date.now();
       }
-      
-      interval = setInterval(() => {
-        setTime(prevTime => {
-          // Count down logic
-          if (!countingUp) {
-            // If timer reaches 0, switch to counting up
-            if (prevTime.hours === 0 && prevTime.minutes === 0 && prevTime.seconds === 0) {
-              // Show completion notification only once
-              if (!hasCompleted) {
-                setHasCompleted(true);
-                setCountingUp(true);
-                // Set overage flag only if this was a countdown timer (initialTime > 0)
-                if (initialTime && (initialTime.hours > 0 || initialTime.minutes > 0 || initialTime.seconds > 0)) {
-                  setIsOverage(true);
+
+      const tick = () => {
+        const now = Date.now();
+        const elapsed = now - (lastTickRef.current || now);
+        
+        // Only update if at least 1 second has passed
+        if (elapsed >= 1000) {
+          setTime(prevTime => {
+            // Count down logic
+            if (!countingUp) {
+              // If timer reaches 0, switch to counting up
+              if (prevTime.hours === 0 && prevTime.minutes === 0 && prevTime.seconds === 0) {
+                // Show completion notification only once
+                if (!hasCompleted) {
+                  setHasCompleted(true);
+                  setCountingUp(true);
+                  // Set overage flag only if this was a countdown timer (initialTime > 0)
+                  if (initialTime && (initialTime.hours > 0 || initialTime.minutes > 0 || initialTime.seconds > 0)) {
+                    setIsOverage(true);
+                  }
                 }
+                
+                // Ensure we don't return undefined or invalid state
+                return { hours: 0, minutes: 0, seconds: 1 };
               }
               
-              // Ensure we don't return undefined or invalid state
-              return { hours: 0, minutes: 0, seconds: 1 };
+              let newSeconds = prevTime.seconds - Math.floor(elapsed / 1000);
+              let newMinutes = prevTime.minutes;
+              let newHours = prevTime.hours;
+              
+              while (newSeconds < 0) {
+                newSeconds += 60;
+                newMinutes -= 1;
+              }
+              
+              while (newMinutes < 0) {
+                newMinutes += 60;
+                newHours -= 1;
+              }
+              
+              // Ensure we never return negative values
+              return {
+                hours: Math.max(0, newHours),
+                minutes: Math.max(0, newMinutes),
+                seconds: Math.max(0, newSeconds)
+              };
             }
-            
-            let newSeconds = prevTime.seconds - 1;
-            let newMinutes = prevTime.minutes;
-            let newHours = prevTime.hours;
-            
-            if (newSeconds < 0) {
-              newSeconds = 59;
-              newMinutes -= 1;
+            // Count up logic
+            else {
+              const elapsedSeconds = Math.floor(elapsed / 1000);
+              let newSeconds = prevTime.seconds + elapsedSeconds;
+              let newMinutes = prevTime.minutes;
+              let newHours = prevTime.hours;
+              
+              while (newSeconds > 59) {
+                newSeconds -= 60;
+                newMinutes += 1;
+              }
+              
+              while (newMinutes > 59) {
+                newMinutes -= 60;
+                newHours += 1;
+              }
+              
+              return {
+                hours: newHours,
+                minutes: newMinutes,
+                seconds: newSeconds
+              };
             }
-            
-            if (newMinutes < 0) {
-              newMinutes = 59;
-              newHours -= 1;
-            }
-            
-            // Ensure we never return negative values
-            return {
-              hours: Math.max(0, newHours),
-              minutes: Math.max(0, newMinutes),
-              seconds: Math.max(0, newSeconds)
-            };
-          }
-          // Count up logic
-          else {
-            let newSeconds = prevTime.seconds + 1;
-            let newMinutes = prevTime.minutes;
-            let newHours = prevTime.hours;
-            
-            if (newSeconds > 59) {
-              newSeconds = 0;
-              newMinutes += 1;
-            }
-            
-            if (newMinutes > 59) {
-              newMinutes = 0;
-              newHours += 1;
-            }
-            
-            return {
-              hours: newHours,
-              minutes: newMinutes,
-              seconds: newSeconds
-            };
-          }
-        });
-      }, 1000);
+          });
+
+          // Update last tick time
+          lastTickRef.current = now - (elapsed % 1000); // Adjust for any remainder
+        }
+
+        // Request next frame
+        animationFrameRef.current = requestAnimationFrame(tick);
+      };
+
+      // Start the animation frame loop
+      animationFrameRef.current = requestAnimationFrame(tick);
+    } else {
+      // Clean up when timer stops
+      startTimeRef.current = null;
+      lastTickRef.current = null;
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
     }
     
     return () => {
-      if (interval) {
-        clearInterval(interval);
-        interval = null;
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
       }
     };
   }, [isRunning, hasCompleted, countingUp, initialTime]);
