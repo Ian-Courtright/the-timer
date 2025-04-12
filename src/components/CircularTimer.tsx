@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo, useState } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import gsap from 'gsap';
 
 interface CircularTimerProps {
@@ -27,10 +27,13 @@ const CircularTimer: React.FC<CircularTimerProps> = ({
   const countUpPulseRef = useRef<HTMLDivElement>(null);
   const overagePulseRef = useRef<HTMLDivElement>(null);
   const baseCircleRef = useRef<HTMLDivElement>(null);
+  const idleStateRef = useRef<HTMLDivElement>(null);
+  const zeroStateRef = useRef<HTMLDivElement>(null);
   const isInitialMount = useRef(true);
-  const runningAnimationActive = useRef(false);
   const lastProgress = useRef(progress);
   const pieAnimationRef = useRef<gsap.core.Tween | null>(null);
+  const isTransitioningToZero = useRef(false);
+  const showZeroState = useRef(false);
   
   // Initial animation - only run once on mount
   useEffect(() => {
@@ -67,10 +70,10 @@ const CircularTimer: React.FC<CircularTimerProps> = ({
       // Animate in the pie chart with a reveal effect
       pieAnimationRef.current = gsap.fromTo(pieRef.current,
         { 
-          backgroundImage: `conic-gradient(transparent 0deg, transparent 360deg, #ffffff 360deg, #ffffff 360deg)` 
+          backgroundImage: `conic-gradient(#ffffff 0deg, #ffffff 360deg, #ffffff 360deg, #ffffff 360deg)` 
         },
         {
-          backgroundImage: `conic-gradient(transparent 0deg, transparent ${360 * ((100 - progress) / 100)}deg, #ffffff ${360 * ((100 - progress) / 100)}deg, #ffffff 360deg)`,
+          backgroundImage: `conic-gradient(#ffffff 0deg, #ffffff ${360 * (progress / 100)}deg, transparent ${360 * (progress / 100)}deg, transparent 360deg)`,
           duration: 0.6,
           ease: "power2.out"
         }
@@ -81,6 +84,25 @@ const CircularTimer: React.FC<CircularTimerProps> = ({
         { scale: 0.95 },
         { scale: 1, duration: 0.4, ease: "back.out(1.7)" }
       );
+
+      // Hide idle state when we have a timer
+      if (idleStateRef.current) {
+        gsap.to(idleStateRef.current, {
+          opacity: 0,
+          duration: 0.3
+        });
+      }
+      
+      // Hide zero state if it's visible
+      if (zeroStateRef.current) {
+        gsap.killTweensOf(zeroStateRef.current);
+        gsap.to(zeroStateRef.current, {
+          opacity: 0,
+          scale: 1,
+          duration: 0.3
+        });
+        showZeroState.current = false;
+      }
     } else if (
       pieRef.current && 
       Math.abs(progress - prevProgress) > 2 && 
@@ -91,8 +113,110 @@ const CircularTimer: React.FC<CircularTimerProps> = ({
     ) {
       // Just set the new progress instantly without loading animation
       gsap.set(pieRef.current, {
-        backgroundImage: `conic-gradient(transparent 0deg, transparent ${360 * ((100 - progress) / 100)}deg, #ffffff ${360 * ((100 - progress) / 100)}deg, #ffffff 360deg)`
+        backgroundImage: `conic-gradient(#ffffff 0deg, #ffffff ${360 * (progress / 100)}deg, transparent ${360 * (progress / 100)}deg, transparent 360deg)`
       });
+      
+      // Hide idle state
+      if (idleStateRef.current) {
+        gsap.to(idleStateRef.current, {
+          opacity: 0,
+          duration: 0.3
+        });
+      }
+      
+      // Hide zero state if it's visible
+      if (zeroStateRef.current) {
+        gsap.killTweensOf(zeroStateRef.current);
+        gsap.to(zeroStateRef.current, {
+          opacity: 0,
+          scale: 1,
+          duration: 0.3
+        });
+        showZeroState.current = false;
+      }
+    }
+    
+    // Show idle state when no timer is set
+    if (progress === 0 && !isRunning && !isCountingUp && !isOverage) {
+      if (idleStateRef.current) {
+        gsap.to(idleStateRef.current, {
+          opacity: 1,
+          duration: 0.3
+        });
+      }
+      
+      // Hide zero state if we're in idle
+      if (zeroStateRef.current) {
+        gsap.killTweensOf(zeroStateRef.current);
+        gsap.to(zeroStateRef.current, {
+          opacity: 0,
+          scale: 1,
+          duration: 0.3
+        });
+        showZeroState.current = false;
+      }
+    }
+    
+    // Handle the transition to zero specifically for countdown timer
+    if (progress === 0 && isRunning && !isOverage && !isCountingUp && prevProgress > 0) {
+      // This is the key transition - countdown reached zero but not yet in overage
+      isTransitioningToZero.current = true;
+      showZeroState.current = true;
+      
+      // Show the zero state with animation
+      if (zeroStateRef.current && progressRef.current) {
+        // Make sure no other states are visible
+        // Hide the pie chart
+        gsap.to(progressRef.current, {
+          opacity: 0,
+          duration: 0.3
+        });
+        
+        // Make sure count-up is hidden
+        if (countUpPulseRef.current) {
+          gsap.killTweensOf(countUpPulseRef.current);
+          gsap.to(countUpPulseRef.current, {
+            opacity: 0,
+            scale: 1,
+            duration: 0.3
+          });
+        }
+        
+        // Make sure overage is hidden
+        if (overagePulseRef.current) {
+          gsap.killTweensOf(overagePulseRef.current);
+          gsap.to(overagePulseRef.current, {
+            opacity: 0,
+            scale: 1,
+            duration: 0.3
+          });
+        }
+        
+        // Then show and animate the zero state
+        gsap.fromTo(zeroStateRef.current, 
+          { opacity: 0, scale: 0.5 },
+          { 
+            opacity: 1, 
+            scale: 1.1,
+            duration: 0.5,
+            ease: "back.out(1.7)",
+            onComplete: () => {
+              // Only start pulse if we should still show zero state
+              if (showZeroState.current) {
+                // Pulse animation for zero state
+                gsap.to(zeroStateRef.current, {
+                  scale: 1.05,
+                  opacity: 0.9,
+                  duration: 0.8,
+                  repeat: -1,
+                  yoyo: true,
+                  ease: "sine.inOut"
+                });
+              }
+            }
+          }
+        );
+      }
     }
     
     setPrevProgress(progress);
@@ -105,7 +229,7 @@ const CircularTimer: React.FC<CircularTimerProps> = ({
     // Detect when timer stops running
     const isStopping = !isRunning && prevIsRunning;
     
-    if (isStarting && pieRef.current && !isCountingUp && !isOverage) {
+    if (isStarting && pieRef.current && !isCountingUp && !isOverage && progress > 0) {
       // Starting a countdown timer
       // Set up a continuous animation that will run for the expected duration
       if (pieAnimationRef.current) {
@@ -113,24 +237,24 @@ const CircularTimer: React.FC<CircularTimerProps> = ({
         pieAnimationRef.current = null;
       }
       
-      const startDegrees = 360 * ((100 - progress) / 100);
+      const startAngle = 360 * (progress / 100);
       // Calculate remaining time percentage for a more accurate duration
       const remainingPercentage = progress / 100;
       const expectedDuration = remainingPercentage * (progress >= 5 ? 60 : 10); // Scale based on percentage
       
       pieAnimationRef.current = gsap.fromTo(pieRef.current,
         { 
-          backgroundImage: `conic-gradient(transparent 0deg, transparent ${startDegrees}deg, #ffffff ${startDegrees}deg, #ffffff 360deg)` 
+          backgroundImage: `conic-gradient(#ffffff 0deg, #ffffff ${startAngle}deg, transparent ${startAngle}deg, transparent 360deg)` 
         },
         {
-          backgroundImage: `conic-gradient(transparent 0deg, transparent 0deg, #ffffff 0deg, #ffffff 360deg)`,
+          backgroundImage: `conic-gradient(#ffffff 0deg, #ffffff 0deg, transparent 0deg, transparent 360deg)`,
           duration: expectedDuration,
           ease: "linear",
           onComplete: () => {
             // Ensure clean state after animation completes
             if (pieRef.current) {
               gsap.set(pieRef.current, {
-                backgroundImage: `conic-gradient(transparent 0deg, transparent 0deg, #ffffff 0deg, #ffffff 360deg)`
+                backgroundImage: `conic-gradient(#ffffff 0deg, #ffffff 0deg, transparent 0deg, transparent 360deg)`
               });
             }
           }
@@ -144,6 +268,23 @@ const CircularTimer: React.FC<CircularTimerProps> = ({
         pieAnimationRef.current.kill();
         pieAnimationRef.current = null;
       }
+      
+      // Stop all pulsing animations
+      if (zeroStateRef.current) {
+        gsap.killTweensOf(zeroStateRef.current);
+      }
+      
+      if (countUpPulseRef.current) {
+        gsap.killTweensOf(countUpPulseRef.current);
+      }
+      
+      if (overagePulseRef.current) {
+        gsap.killTweensOf(overagePulseRef.current);
+      }
+      
+      // Reset state flags
+      isTransitioningToZero.current = false;
+      showZeroState.current = false;
     }
 
     // Update previous state
@@ -161,7 +302,7 @@ const CircularTimer: React.FC<CircularTimerProps> = ({
   // Smoothly update progress while running
   useEffect(() => {
     // Only update progress if timer is running, not in overage, and not counting up
-    if (isRunning && !isCountingUp && !isOverage && pieRef.current) {
+    if (isRunning && !isCountingUp && !isOverage && pieRef.current && progress > 0) {
       // Only restart animation if the progress has changed significantly
       if (Math.abs(progress - lastProgress.current) > 2) {
         // Kill existing animation if there is one
@@ -173,7 +314,7 @@ const CircularTimer: React.FC<CircularTimerProps> = ({
         // Save current progress for next comparison
         lastProgress.current = progress;
         
-        const currentDegrees = 360 * ((100 - progress) / 100);
+        const currentAngle = 360 * (progress / 100);
         
         // Calculate the remaining time based on progress
         const remainingPercentage = progress / 100;
@@ -182,17 +323,17 @@ const CircularTimer: React.FC<CircularTimerProps> = ({
         // Create a new animation from the current state to empty
         pieAnimationRef.current = gsap.fromTo(pieRef.current,
           { 
-            backgroundImage: `conic-gradient(transparent 0deg, transparent ${currentDegrees}deg, #ffffff ${currentDegrees}deg, #ffffff 360deg)` 
+            backgroundImage: `conic-gradient(#ffffff 0deg, #ffffff ${currentAngle}deg, transparent ${currentAngle}deg, transparent 360deg)` 
           },
           {
-            backgroundImage: `conic-gradient(transparent 0deg, transparent 0deg, #ffffff 0deg, #ffffff 360deg)`,
+            backgroundImage: `conic-gradient(#ffffff 0deg, #ffffff 0deg, transparent 0deg, transparent 360deg)`,
             duration: expectedDuration,
             ease: "linear",
             onComplete: () => {
               // Ensure clean state after animation completes
               if (pieRef.current) {
                 gsap.set(pieRef.current, {
-                  backgroundImage: `conic-gradient(transparent 0deg, transparent 0deg, #ffffff 0deg, #ffffff 360deg)`
+                  backgroundImage: `conic-gradient(#ffffff 0deg, #ffffff 0deg, transparent 0deg, transparent 360deg)`
                 });
               }
             }
@@ -226,6 +367,17 @@ const CircularTimer: React.FC<CircularTimerProps> = ({
           duration: 0.3
         });
       }
+      
+      // Hide zero state when transitioning to overage or count-up
+      if (zeroStateRef.current) {
+        gsap.killTweensOf(zeroStateRef.current);
+        gsap.to(zeroStateRef.current, {
+          opacity: 0,
+          scale: 1,
+          duration: 0.3
+        });
+        showZeroState.current = false;
+      }
     }
     
     // Transition back to countdown mode
@@ -246,22 +398,44 @@ const CircularTimer: React.FC<CircularTimerProps> = ({
       // Detect transition to counting up mode
       const isTransitioningToCountUp = isCountingUp && !prevIsCountingUp;
       
+      // This is the key condition - show count-up visual whenever isCountingUp flag is true
+      // and the timer is running and not in overage
       if (isCountingUp && isRunning && !isOverage) {
+        // First make sure other states are hidden
+        // Hide zero state if it's showing
+        if (zeroStateRef.current) {
+          gsap.killTweensOf(zeroStateRef.current);
+          gsap.to(zeroStateRef.current, {
+            opacity: 0,
+            scale: 1,
+            duration: 0.3
+          });
+          showZeroState.current = false;
+        }
+        
+        // Hide pie chart
+        if (progressRef.current) {
+          gsap.to(progressRef.current, {
+            opacity: 0,
+            duration: 0.3
+          });
+        }
+        
         // If transitioning to count-up, use a special animation
         if (isTransitioningToCountUp) {
           // First fade in with emphasis
           gsap.fromTo(countUpPulseRef.current,
             { opacity: 0, scale: 0.5 },
             { 
-              opacity: 0.8, 
+              opacity: 1, 
               scale: 1.08,
               duration: 0.4, 
               ease: "back.out(1.7)",
               onComplete: () => {
                 // Then start the pulsing animation
                 gsap.to(countUpPulseRef.current, {
-                  opacity: 0.8, // Increased opacity for more vivid pulsing
-                  scale: 1.08, // Slightly more expansion
+                  opacity: 0.85,
+                  scale: 1.05,
                   duration: 1,
                   repeat: -1,
                   yoyo: true,
@@ -273,20 +447,12 @@ const CircularTimer: React.FC<CircularTimerProps> = ({
         } else {
           // Regular pulsing animation for count-up mode
           gsap.to(countUpPulseRef.current, {
-            opacity: 0.8, // Increased opacity for more vivid pulsing
-            scale: 1.08, // Slightly more expansion
+            opacity: 0.85,
+            scale: 1.05,
             duration: 1,
             repeat: -1,
             yoyo: true,
             ease: "sine.inOut"
-          });
-        }
-        
-        // Hide regular pie progress
-        if (progressRef.current) {
-          gsap.to(progressRef.current, {
-            opacity: 0,
-            duration: 0.3
           });
         }
       } else {
@@ -297,14 +463,6 @@ const CircularTimer: React.FC<CircularTimerProps> = ({
           scale: 1,
           duration: 0.3
         });
-        
-        // Show regular pie progress if not in overage mode
-        if (progressRef.current && !isOverage) {
-          gsap.to(progressRef.current, {
-            opacity: 1,
-            duration: 0.3
-          });
-        }
       }
     }
     
@@ -327,20 +485,41 @@ const CircularTimer: React.FC<CircularTimerProps> = ({
       if (isOverage && isRunning) {
         // If transitioning to overage, use a special animation
         if (isTransitioningToOverage) {
+          // Hide zero state first if it's showing
+          if (zeroStateRef.current) {
+            gsap.killTweensOf(zeroStateRef.current);
+            gsap.to(zeroStateRef.current, {
+              opacity: 0,
+              scale: 1,
+              duration: 0.3
+            });
+            showZeroState.current = false;
+          }
+          
+          // Hide count-up state as well
+          if (countUpPulseRef.current) {
+            gsap.killTweensOf(countUpPulseRef.current);
+            gsap.to(countUpPulseRef.current, {
+              opacity: 0,
+              scale: 1,
+              duration: 0.3
+            });
+          }
+          
           // First fade in with emphasis
           gsap.fromTo(overagePulseRef.current,
             { opacity: 0, scale: 0.5 },
             { 
-              opacity: 0.9, 
-              scale: 1.12,
+              opacity: 1, 
+              scale: 1.08,
               duration: 0.4, 
               ease: "back.out(1.7)",
               onComplete: () => {
                 // Then start the pulsing animation - synced with timer (1 second duration)
                 gsap.to(overagePulseRef.current, {
-                  opacity: 0.9, // Higher opacity for more vivid red
-                  scale: 1.12, // Increase expansion for more noticeable pulse
-                  duration: 1, // Match the timer's 1-second pulse
+                  opacity: 0.9,
+                  scale: 1.08,
+                  duration: 1,
                   repeat: -1,
                   yoyo: true,
                   ease: "sine.inOut"
@@ -349,32 +528,14 @@ const CircularTimer: React.FC<CircularTimerProps> = ({
             }
           );
         } else {
-          // Regular pulsing animation for overage mode - synced with timer (1 second duration)
+          // Regular pulsing animation for overage mode
           gsap.to(overagePulseRef.current, {
-            opacity: 0.9, // Higher opacity for more vivid red
-            scale: 1.12, // Increase expansion for more noticeable pulse
-            duration: 1, // Match the timer's 1-second pulse
+            opacity: 0.9,
+            scale: 1.08,
+            duration: 1,
             repeat: -1,
             yoyo: true,
             ease: "sine.inOut"
-          });
-        }
-        
-        // Hide regular pie progress and green pulse
-        if (progressRef.current) {
-          gsap.to(progressRef.current, {
-            opacity: 0,
-            duration: 0.3
-          });
-        }
-        
-        // Ensure green count-up pulse is hidden
-        if (countUpPulseRef.current) {
-          gsap.killTweensOf(countUpPulseRef.current);
-          gsap.to(countUpPulseRef.current, {
-            opacity: 0,
-            scale: 1,
-            duration: 0.3
           });
         }
       } else {
@@ -400,39 +561,52 @@ const CircularTimer: React.FC<CircularTimerProps> = ({
 
   return (
     <div ref={containerRef} className="relative w-28 h-28">
-      {/* Base circle - now with a subtle border */}
+      {/* Base circle with slight shadow for depth */}
       <div 
         ref={baseCircleRef}
         className="absolute inset-0 rounded-full flex items-center justify-center"
       >
-        {/* Border ring - transparent background with only border */}
-        <div className="w-[calc(100%-4px)] h-[calc(100%-4px)] rounded-full flex items-center justify-center border border-[#2A2A2A]"></div>
+        {/* Background shape - subtle shadow for depth */}
+        <div className="w-full h-full rounded-full bg-[#1A1A1A] shadow-inner"></div>
       </div>
 
-      {/* Pie chart progress - only shown when not counting up */}
+      {/* Idle state - filled white circle */}
+      <div 
+        ref={idleStateRef}
+        className="absolute inset-0 rounded-full bg-white opacity-1 transition-opacity duration-300"
+        style={{ opacity: !isRunning && progress === 0 && !isCountingUp && !isOverage ? 1 : 0 }}
+      ></div>
+      
+      {/* Zero state - briefly shown when countdown reaches exactly zero */}
+      <div 
+        ref={zeroStateRef}
+        className="absolute inset-0 rounded-full bg-white opacity-0"
+      ></div>
+
+      {/* Pie chart progress - only shown when not counting up and not at zero */}
       <div 
         ref={progressRef}
         className="absolute inset-0 rounded-full overflow-hidden transition-opacity duration-300"
-        style={{ opacity: isCountingUp || isOverage ? 0 : 1 }}
+        style={{ opacity: isCountingUp || isOverage || (progress === 0 && isRunning) ? 0 : 1 }}
       >
-        {/* Conic gradient creates the pie chart effect - flipped to show remaining time */}
+        {/* Conic gradient creates the pie chart effect - now showing filled time left */}
         <div 
           ref={pieRef}
           className="w-full h-full rounded-full" 
-          style={{ backgroundImage: `conic-gradient(transparent 0deg, transparent ${360 * ((100 - progress) / 100)}deg, #ffffff ${360 * ((100 - progress) / 100)}deg, #ffffff 360deg)` }}
+          style={{ backgroundImage: `conic-gradient(#ffffff 0deg, #ffffff ${360 * (progress / 100)}deg, transparent ${360 * (progress / 100)}deg, transparent 360deg)` }}
         ></div>
       </div>
 
       {/* Green pulsing circle for count-up mode */}
       <div 
         ref={countUpPulseRef}
-        className="absolute inset-0 rounded-full bg-green-600 opacity-0"
+        className="absolute inset-0 rounded-full bg-green-500 opacity-0"
       ></div>
       
       {/* Red pulsing circle for overage mode */}
       <div 
         ref={overagePulseRef}
-        className="absolute inset-0 rounded-full bg-red-600 opacity-0"
+        className="absolute inset-0 rounded-full bg-red-500 opacity-0"
       ></div>
     </div>
   );

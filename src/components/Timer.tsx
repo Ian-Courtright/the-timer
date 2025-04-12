@@ -55,7 +55,11 @@ const Timer: React.FC<TimerProps> = ({
     if (initialTime) {
       setTime(initialTime);
       setHasCompleted(false);
-      setCountingUp(false);
+      
+      // Set counting up state based on initial time
+      // If all zeros, this is a count-up timer
+      const isCountUp = initialTime.hours === 0 && initialTime.minutes === 0 && initialTime.seconds === 0;
+      setCountingUp(isCountUp);
       setIsOverage(false);
     }
   }, [initialTime]);
@@ -231,6 +235,11 @@ const Timer: React.FC<TimerProps> = ({
       if (!startTimeRef.current) {
         startTimeRef.current = Date.now();
         lastTickRef.current = Date.now();
+        
+        // If initial time is all zeros, this should be a count-up timer
+        if (time.hours === 0 && time.minutes === 0 && time.seconds === 0) {
+          setCountingUp(true);
+        }
       }
 
       const tick = () => {
@@ -434,7 +443,7 @@ const Timer: React.FC<TimerProps> = ({
       {/* Unified layout for all screen sizes */}
       <h1 
         ref={timeDisplayRef}
-        className={`font-black tracking-tighter leading-none w-full ${isOverage && countingUp ? 'text-red-500' : 'text-white'}`}
+        className={`font-black tracking-tighter leading-none w-full ${isOverage && countingUp ? 'text-red-500' : countingUp ? 'text-green-400' : 'text-white'}`}
       >
         <div className="flex flex-row items-center justify-center text-[15vw] leading-[0.9] w-full">
           {isOverage && countingUp && <span className="mr-2">-</span>}

@@ -6,47 +6,57 @@ The circular timer visualization in the application header provides a clear visu
 
 ## Visual States
 
-### 1. Idle State (White Circle)
-- **Appearance**: A simple white outline circle
-- **When Active**: When the timer is not running
-- **Visual Cue**: Static, minimalist representation of a timer that isn't active
+### 1. Idle State (Filled White Circle)
+- **Appearance**: A solid white filled circle
+- **When Active**: When the timer is not running and no duration is set
+- **Visual Cue**: Clean, bright representation of a timer ready to be started
 
 ### 2. Countdown State (White Pie Chart)
-- **Appearance**: A white pie chart that decreases as time passes
+- **Appearance**: A white filled pie chart that decreases as time passes
 - **When Active**: When a timer with a specific duration is running
-- **Visual Cue**: The remaining segment visually represents the percentage of time remaining
+- **Visual Cue**: The filled segment visually represents the percentage of time remaining
 
-### 3. Count-Up State (Green Circle)
-- **Appearance**: A pulsing green circle
-- **When Active**: When timer is running with no set end time, or when a timer starts from zero
-- **Visual Cue**: The green color and gentle pulsing indicates active time tracking
+### 3. Zero State (Pulsing White Circle)
+- **Appearance**: A pulsing white circle with subtle zoom effect
+- **When Active**: When countdown timer reaches exactly zero
+- **Visual Cue**: Visual feedback that the timer has completed but hasn't yet entered overage
 
-### 4. Overage State (Red Circle)
-- **Appearance**: A pulsing red circle
-- **When Active**: When a timer with a set duration has expired but continues running
-- **Visual Cue**: The red color and more pronounced pulsing indicates time overrun
+### 4. Count-Up State (Green Circle)
+- **Appearance**: A solid green filled circle with gentle pulsing
+- **When Active**: Only when a dedicated count-up timer is running (not after countdown completion)
+- **Visual Cue**: The green color and subtle pulsing animation indicates active time tracking
+
+### 5. Overage State (Red Circle)
+- **Appearance**: A solid red filled circle with more pronounced pulsing
+- **When Active**: When a timer with a set duration has expired and goes into negative time (-00:00:01)
+- **Visual Cue**: The red color and pulsing animation provides a clear indication of time overrun
 
 ## Animations and Transitions
 
 ### State Transitions
 1. **Idle → Countdown**:
-   - White circle transforms into a pie chart segment
+   - White filled circle transforms into a decreasing pie chart
    - Container has a subtle bounce effect to indicate timer start
 
-2. **Countdown → Count-Up**:
-   - Pie chart fades out
-   - Green circle fades in with scale animation
-   - Green pulsing begins
+2. **Countdown → Zero**:
+   - White pie chart fades out completely
+   - White pulsing circle fades in with scale animation
+   - Provides visual feedback that the countdown has completed
 
-3. **Count-Up → Overage**:
-   - Green circle fades out
-   - Red circle fades in with emphasis animation
-   - Red pulsing begins with higher intensity
+3. **Zero → Overage**:
+   - White pulsing circle fades out
+   - Red filled circle fades in with emphasis animation
+   - Pulsing animation begins with 1-second sync to timer
 
-4. **Any State → Idle**:
-   - All animations stop
-   - Elements fade back to the white circle
-   - Container has a subtle reset animation
+4. **Idle → Count-Up** (for dedicated count-up timers):
+   - White filled circle fades out
+   - Green filled circle fades in with scale animation
+   - Green pulsing begins with a consistent rhythm
+
+5. **Any State → Idle**:
+   - Current state fades out
+   - Solid white circle fades in
+   - Reset animation provides visual confirmation
 
 ### Continuous Animations
 
@@ -55,38 +65,42 @@ The circular timer visualization in the application header provides a clear visu
    - Uses GSAP's `fromTo` animation for smooth transitions
    - Animation duration is dynamically calculated based on remaining time
 
-2. **Count-Up Animation**:
-   - Green circle gently pulses (scale 1.0 → 1.08)
+2. **Zero Animation**:
+   - White circle gently pulses (scale 1.0 → 1.05)
+   - 0.8-second duration, repeating infinitely
+   - Provides clear visual indication that timer has reached zero
+
+3. **Count-Up Animation**:
+   - Green circle gently pulses (scale 1.0 → 1.05)
    - 1-second duration, repeating infinitely
    - Uses `sine.inOut` easing for a natural breathing effect
 
-3. **Overage Animation**:
-   - Red circle pulses more prominently (scale 1.0 → 1.12)
+4. **Overage Animation**:
+   - Red circle pulses more prominently (scale 1.0 → 1.08)
    - Higher opacity (0.9) for more vivid appearance
    - 1-second duration, matching the timer's tick
 
-## Implementation Improvements
+## Implementation Details
 
-### Smoother Progress Updates
-- Progress updates now trigger when changes exceed 2% (previously 5%)
-- More frequent updates result in more fluid visual representation
+### State Separation
+- Each state has dedicated visual elements to avoid conflicts
+- Proper cleanup of animations when transitioning between states
+- Precise control of opacity and timing for smooth transitions
 
-### Animation Resuming
-- Fixed issue where paused animations wouldn't properly resume
-- Added explicit check for paused animation state
+### Smart State Detection
+- Special handling for the zero state to provide momentary feedback
+- Improved detection of state transitions with appropriate animation triggers
+- Prevention of unintended state overlaps
 
-### Optimized Animation Creation
-- Better calculation of remaining time for more accurate animation duration
-- Improved handling of in-progress animations to prevent visual jumps
-
-### Visual Refinements
-- More distinct visual appearance for each state
-- Added reference to the base circle for possible future enhancements
-- Carefully calibrated opacity and scale values for optimal visibility
+### Visual Clarity Improvements
+- Clear distinction between countdown completion and dedicated count-up timers
+- Better scaling and opacity values for optimal visibility
+- Consistent animation patterns while maintaining state-specific identity
 
 ## User Experience Benefits
 
-1. **Intuitive Status Indication**: Users can immediately recognize the timer's state at a glance
-2. **Smooth Visual Continuity**: Transitions between states feel natural and polished
-3. **Attention-Appropriate Design**: Critical states (like overage) draw more attention
-4. **Consistent Visual Language**: The circular motif maintains consistency across all states 
+1. **Clearer State Indication**: Users can instantly recognize the timer's state at a glance
+2. **Smoother Transitions**: Each state change is animated with precise timing
+3. **Attention-Appropriate Design**: More critical states draw appropriate visual attention
+4. **Informative Feedback**: The zero state provides momentary feedback before transitioning to overage
+5. **Consistent Visual Language**: The circular motif maintains consistency while state-specific styling provides clarity 

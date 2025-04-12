@@ -201,7 +201,28 @@ const Index: React.FC = () => {
   
   // Handle keyboard shortcuts
   useEffect(() => {
+    // Add a flag to prevent keyboard shortcuts from firing immediately on page load
+    const keyboardReady = {current: false};
+    
+    // Set keyboardReady to true after a short delay
+    const readyTimeout = setTimeout(() => {
+      keyboardReady.current = true;
+    }, 1000); // One-second delay (changed from 500ms)
+    
+    // Global space key prevention (add this new handler)
+    const preventSpaceScroll = (e: KeyboardEvent) => {
+      if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault();
+      }
+    };
+    
+    // Add the global handler
+    window.addEventListener('keydown', preventSpaceScroll, { capture: true });
+    
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Skip keyboard shortcuts if not ready yet
+      if (!keyboardReady.current) return;
+      
       // Ignore keyboard shortcuts when inputs are focused
       if (document.activeElement?.tagName === 'INPUT' || 
           document.activeElement?.tagName === 'TEXTAREA') {
@@ -269,6 +290,8 @@ const Index: React.FC = () => {
     
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keydown', preventSpaceScroll, { capture: true });
+      clearTimeout(readyTimeout);
     };
   }, [customTimerOpen, settingsOpen, activeTab]);
   
@@ -1019,6 +1042,22 @@ const Index: React.FC = () => {
     }
   }, [isOverage, activeTimerLog, addEventToLog]);
 
+  // Handle time updates from the Timer component
+  const handleTimeUpdate = useCallback((updatedTime: TimeData) => {
+    setCurrentTime(updatedTime);
+    
+    // If the initial time was 0:00:00, this is a count-up timer
+    const isZeroInitialTime = 
+      timerInitialTime.hours === 0 && 
+      timerInitialTime.minutes === 0 && 
+      timerInitialTime.seconds === 0;
+    
+    // Check if we need to update the counting up state
+    if (isZeroInitialTime && isRunning && !isCountingUp) {
+      setIsCountingUp(true);
+    }
+  }, [timerInitialTime, isRunning, isCountingUp]);
+
   return (
     <div ref={pageRef} className="min-h-screen bg-[#222] text-white flex flex-col overflow-hidden">
       <Header 
@@ -1037,7 +1076,7 @@ const Index: React.FC = () => {
             isRunning={isRunning} 
             onReset={resetTrigger} 
             initialTime={timerInitialTime}
-            onTimeUpdate={setCurrentTime}
+            onTimeUpdate={handleTimeUpdate}
             timerName={timerName}
             onNameChange={handleNameChange}
             onOverageChange={handleOverageChange}
