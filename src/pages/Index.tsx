@@ -211,7 +211,10 @@ const Index: React.FC = () => {
     
     // Global space key prevention (add this new handler)
     const preventSpaceScroll = (e: KeyboardEvent) => {
-      if (e.key === ' ' || e.code === 'Space') {
+      // Allow space key when inputs or textareas are focused
+      if ((e.key === ' ' || e.code === 'Space') && 
+          document.activeElement?.tagName !== 'INPUT' && 
+          document.activeElement?.tagName !== 'TEXTAREA') {
         e.preventDefault();
       }
     };
